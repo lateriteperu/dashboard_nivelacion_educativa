@@ -178,7 +178,26 @@ with tab1:
 
     # --- TAB 2: NOTAS ---
 with tab2:
-        st.header("Rendimiento Académico - Exit Tickets")
+        st.header("🎯 Rendimiento Académico (Exit Tickets)")
+        
+        # 1. Cálculos de los indicadores resumen
+        # Promedio general de puntaje
+        promedio_puntaje = df_filtered['Pct_Puntaje'].mean() if not df_filtered.empty else 0
+        
+        # Promedio de nivel logro
+        promedio_logro = df_filtered['Pct_Logro'].mean() if not df_filtered.empty else 0
+        
+        # Cálculo de nivel NO logrado (el complemento del logro)
+        promedio_no_logro = 100 - promedio_logro if not df_filtered.empty else 0
+
+        # 2. Mostramos las métricas en 3 columnas
+        m1, m2, m3 = st.columns(3)
+        
+        m1.metric("Puntaje Promedio (%)", f"{promedio_puntaje:.1f}%")
+        m2.metric("Nivel Logro (%)", f"{promedio_logro:.1f}%")
+        m3.metric("Nivel No Logrado (%)", f"{promedio_no_logro:.1f}%", delta_color="inverse")
+
+        st.markdown("---") # Separador visual
         
         # 1. Preparación de datos (Igual que antes)
         df_notas = df_filtered.groupby(['Date', 'Grado'])[['Pct_Logro', 'Pct_Puntaje']].mean().reset_index()
