@@ -194,8 +194,8 @@ with tab2:
         m1, m2, m3 = st.columns(3)
         
         m1.metric("Puntaje Promedio (% Exit ticket)", f"{promedio_puntaje:.1f}%")
-        m2.metric("Nivel Logro - Alcanzado (%)", f"{promedio_logro:.1f}%")
-        m3.metric("Nivel Logro - No Alcanzado (%)", f"{promedio_no_logro:.1f}%", delta_color="inverse")
+        m2.metric("Nivel Logro - Alcanzado (% Estudiantes)", f"{promedio_logro:.1f}%")
+        m3.metric("Nivel Logro - No Alcanzado (% Estudiantes)", f"{promedio_no_logro:.1f}%", delta_color="inverse")
 
         st.markdown("---") # Separador visual
         
