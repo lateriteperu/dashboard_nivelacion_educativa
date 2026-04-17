@@ -39,6 +39,7 @@ def load_data():
         # Mapeo corregido según tu CSV real
         column_map = {
             'q8_fecha_clase': 'Date',
+            'q7_sesion': 'Sesion',
             'q4_institucion': 'Institucion', # Corregido de q4_grado a q4_institucion
             'q5_grado': 'Grado',
             'q3_curso': 'Curso',
@@ -74,7 +75,8 @@ if df_raw is not None:
     sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_raw['Institucion'].unique().tolist()))
     sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_raw['Grado'].unique().tolist()))
     sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_raw['Curso'].unique().tolist()))
-    
+    sel_sesion = st.sidebar.selectbox("Seleccionar Sesion:", ['Todos'] + sorted(df_raw['Sesion'].unique().tolist()))
+
     min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
     sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
