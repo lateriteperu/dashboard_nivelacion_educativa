@@ -109,31 +109,33 @@ with tab1:
         m1, m2, m3, m4 = st.columns(4)
         
         if not df_filtered.empty:
-            # 1. Tu lógica anterior para sesiones y horas (Correcta)
-            df_sesiones_unicas = df_filtered.groupby(['Date', 'Sesion'])['Horas'].mean().reset_index()
-            num_sesiones = df_sesiones_unicas.shape[0]
+            # --- PASO 1: Identificar Sesiones Únicas ---
+            # Agrupamos por Fecha, Institución y Tipo de Sesión. 
+            # Esto garantiza que si en un mismo día hubo Reforzamiento y Consolidación, se cuenten como 2.
+            # Pero si hay varios grados en la misma sesión, se cuenten como 1.
+            df_sesiones_unicas = df_filtered.groupby(['Date', 'Institucion', 'Sesion'])['Horas'].first().reset_index()
+            
+            # --- PASO 2: Cálculos Reales ---
+            num_sesiones = len(df_sesiones_unicas) # Ahora sí contará 4 o 2 según tu filtro
             horas_totales = df_sesiones_unicas['Horas'].sum()
             
-            # 2. NUEVO CÁLCULO: ASISTENCIA GLOBAL (Ponderada)
-            # Sumamos todos los niños que asistieron en el rango
+            # --- PASO 3: Asistencia Global (Tu nueva fórmula) ---
             total_asistentes = df_filtered['Asistencia_Absoluta'].sum()
-            # Sumamos la capacidad total multiplicada por cada sesión (total de cupos ofrecidos)
-            total_posibles = df_filtered['n_alumnos'].sum()
+            total_inscritos = df_filtered['n_alumnos'].sum()
+            asistencia_global = (total_asistentes / total_inscritos * 100) if total_inscritos > 0 else 0
             
-            asistencia_global = (total_asistentes / total_posibles * 100) if total_posibles > 0 else 0
-            
-            # Promedio absoluto para la métrica m2 (opcional)
-            prom_asistencia_abs = df_filtered['Asistencia_Absoluta'].mean()
+            # Promedio de niños por sesión (opcional)
+            prom_niños = total_asistentes / num_sesiones if num_sesiones > 0 else 0
         else:
             num_sesiones = 0
             horas_totales = 0
             asistencia_global = 0
-            prom_asistencia_abs = 0
+            prom_niños = 0
 
-        # --- MOSTRAR MÉTRICAS ACTUALIZADAS ---
+        # --- MOSTRAR MÉTRICAS ---
         m1.metric("Número de sesiones", num_sesiones)
         m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h")
-        m3.metric("Promedio asistencia", f"{prom_asistencia_abs:.1f} alum.")
+        m3.metric("Promedio asistencia", f"{prom_niños:.1f} alum.")
         m4.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%")
 
         st.markdown("---")
