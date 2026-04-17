@@ -108,15 +108,33 @@ with tab1:
         st.header("Resumen de Asistencia")
         m1, m2, m3, m4 = st.columns(4)
         
-        num_sesiones = df_filtered['Date'].nunique()
-        prom_asistencia_abs = df_filtered['Asistencia_Absoluta'].mean() if not df_filtered.empty else 0
-        horas_totales = df_filtered['Horas'].sum() if not df_filtered.empty else 0
-        prom_asistencia_pct = df_filtered['Pct_Asistencia'].mean() if not df_filtered.empty else 0
+        if not df_filtered.empty:
+            # 1. Tu lógica anterior para sesiones y horas (Correcta)
+            df_sesiones_unicas = df_filtered.groupby(['Date', 'Sesion'])['Horas'].mean().reset_index()
+            num_sesiones = df_sesiones_unicas.shape[0]
+            horas_totales = df_sesiones_unicas['Horas'].sum()
+            
+            # 2. NUEVO CÁLCULO: ASISTENCIA GLOBAL (Ponderada)
+            # Sumamos todos los niños que asistieron en el rango
+            total_asistentes = df_filtered['Asistencia_Absoluta'].sum()
+            # Sumamos la capacidad total multiplicada por cada sesión (total de cupos ofrecidos)
+            total_posibles = df_filtered['n_alumnos'].sum()
+            
+            asistencia_global = (total_asistentes / total_posibles * 100) if total_posibles > 0 else 0
+            
+            # Promedio absoluto para la métrica m2 (opcional)
+            prom_asistencia_abs = df_filtered['Asistencia_Absoluta'].mean()
+        else:
+            num_sesiones = 0
+            horas_totales = 0
+            asistencia_global = 0
+            prom_asistencia_abs = 0
 
+        # --- MOSTRAR MÉTRICAS ACTUALIZADAS ---
         m1.metric("Número de sesiones", num_sesiones)
-        m2.metric("Promedio de asistencia", f"{prom_asistencia_abs:.1f} alum.")
-        m3.metric("Horas efectivas", f"{horas_totales:.1f} h")
-        m4.metric("Asistencia Promedio (%)", f"{prom_asistencia_pct:.1f}%")
+        m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h")
+        m3.metric("Promedio asistencia", f"{prom_asistencia_abs:.1f} alum.")
+        m4.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%")
 
         st.markdown("---")
         st.subheader("👥Tendencia Diaria de Asistencia")
