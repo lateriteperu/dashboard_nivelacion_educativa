@@ -211,10 +211,10 @@ with tab1:
         """)
 
         # --- ANÁLISIS DE PERMANENCIA Y DESERCIÓN ---
-        st.subheader("🚩 Análisis de Permanencia y Deserción")
+        st.subheader("🚩 Análisis de Patrón de Asistencias")
         col_fid1, col_fid2 = st.columns(2)
             
-        with col_fid1:
+with col_fid1:
                 pct_nunca = df_filtered['Pct_Nunca_Asistencia'].mean()
                 fig_nunca = px.bar(
                     x=["Nunca han asistido"], y=[pct_nunca],
@@ -226,7 +226,7 @@ with tab1:
                 st.plotly_chart(fig_nunca, use_container_width=True)
                 st.caption("Estudiantes inscritos en la lista de clases que no han asistido a ninguna sesión de reforzamiento")
 
-        with col_fid2:
+with col_fid2:
                 pct_una = df_filtered['Pct_Una_Asistencia'].mean()
                 fig_una = px.bar(
                     x=["Asistieron solo 1 vez"], y=[pct_una],
