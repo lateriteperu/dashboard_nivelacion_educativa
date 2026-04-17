@@ -45,7 +45,6 @@ def load_data():
             'q3_curso': 'Curso',
             'asistencia': 'Asistencia_Absoluta',
             'duration_h': 'Horas',
-            'n_alumnos': 'Alumnos',
             'pct_asistencia': 'Pct_Asistencia',
             'pct_logro': 'Pct_Logro',
             'pct_inicio': 'Pct_Inicio',
@@ -128,7 +127,7 @@ with tab1:
             
             # --- PASO 3: Asistencia Global -----------------
             total_asistentes = df_filtered['Asistencia_Absoluta'].sum()
-            total_inscritos = df_filtered['Alumnos'].sum()
+            total_inscritos = df_filtered['n_alumnos'].sum()
             asistencia_global = (total_asistentes / total_inscritos * 100) if total_inscritos > 0 else 0
             
             # Promedio de niños por sesión (opcional)
