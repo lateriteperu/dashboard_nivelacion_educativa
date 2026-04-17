@@ -154,8 +154,8 @@ with tab1:
             x='Date', 
             y='Pct_Asistencia', 
             color='Grado',
-            title='Porcentaje Promedio de Asistencia por Día',
-            labels={'Pct_Asistencia': 'Asistencia Promedio (%)', 'Date': 'Día'},
+            title='Porcentaje de Asistencia por Día (%)',
+            labels={'Pct_Asistencia': 'Asistencia (%)', 'Date': 'Día'},
             barmode='group' # Muestra las barras de 4to y 5to una al lado de la otra
         )
         
@@ -168,9 +168,9 @@ with tab1:
             💡 **¿Cómo leer este gráfico?** Las **barras** muestran el porcentaje de estudiantes que asistieron a clases diariamente.
         """)
 
-        # --- NUEVA SECCIÓN: ANÁLISIS DE TENDENCIA REAL ---
+        # --- ANÁLISIS DE TENDENCIA REAL MEDIA MÓVIL DE 3 SESIONES ---
         st.markdown("---")
-        st.subheader("📈 Análisis de Tendencia (Media Móvil)")
+        st.subheader("📈 Análisis de Tendencia (Media móvil de 3 sesiones)")
         
         # 1. Preparamos los datos ordenados por fecha
         # Agrupamos por fecha (promediando instituciones) para tener una sola línea
@@ -209,6 +209,36 @@ with tab1:
             💡 **¿Cómo leer este gráfico?** La **línea continua** muestra la dirección del proyecto, ignorando caídas o subidas bruscas de un solo día. 
             Si la línea sube significa que el compromiso está en proceso de mejora.
         """)
+
+        # --- ANÁLISIS DE PERMANENCIA Y DESERCIÓN ---
+        st.subheader("🚩 Análisis de Permanencia y Deserción")
+        col_fid1, col_fid2 = st.columns(2)
+            
+        with col_fid1:
+                pct_nunca = df_filtered['Pct_Nunca_Asistencia'].mean()
+                fig_nunca = px.bar(
+                    x=["Nunca han asistido"], y=[pct_nunca],
+                    title="% Estudiantes que NUNCA asistieron",
+                    labels={'x': '', 'y': 'Porcentaje (%)'},
+                    color_discrete_sequence=['#ef553b'] # Rojo alerta
+                )
+                fig_nunca.update_yaxes(range=[0, 100])
+                st.plotly_chart(fig_nunca, use_container_width=True)
+                st.caption("Estudiantes inscritos en la lista de clases que no han asistido a ninguna sesión de reforzamiento")
+
+        with col_fid2:
+                pct_una = df_filtered['Pct_Una_Asistencia'].mean()
+                fig_una = px.bar(
+                    x=["Asistieron solo 1 vez"], y=[pct_una],
+                    title="% Estudiantes con RIESGO de Abandono",
+                    labels={'x': '', 'y': 'Porcentaje (%)'},
+                    color_discrete_sequence=['#fecb52'] # Amarillo riesgo
+                )
+                fig_una.update_yaxes(range=[0, 100])
+                st.plotly_chart(fig_una, use_container_width=True)
+                st.caption("Estudiantes que probaron la clase pero no han generado hábito de asistencia.")
+
+            st.markdown("---")
 
     # --- TAB 2: NOTAS ---
 with tab2:
