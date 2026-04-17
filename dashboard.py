@@ -45,6 +45,7 @@ def load_data():
             'q3_curso': 'Curso',
             'asistencia': 'Asistencia_Absoluta',
             'duration_h': 'Horas',
+            'n_alumnos': 'Alumnos',
             'pct_asistencia': 'Pct_Asistencia',
             'pct_logro': 'Pct_Logro',
             'pct_inicio': 'Pct_Inicio',
@@ -116,12 +117,12 @@ with tab1:
             df_sesiones_unicas = df_filtered.groupby(['Date', 'Institucion', 'Sesion'])['Horas'].first().reset_index()
             
             # --- PASO 2: Cálculos Reales ---
-            num_sesiones = len(df_sesiones_unicas) # Ahora sí contará 4 o 2 según tu filtro
+            num_sesiones = len(df_sesiones_unicas)
             horas_totales = df_sesiones_unicas['Horas'].sum()
             
-            # --- PASO 3: Asistencia Global (Tu nueva fórmula) ---
+            # --- PASO 3: Asistencia Global -----------------
             total_asistentes = df_filtered['Asistencia_Absoluta'].sum()
-            total_inscritos = df_filtered['n_alumnos'].sum()
+            total_inscritos = df_filtered['Alumnos'].sum()
             asistencia_global = (total_asistentes / total_inscritos * 100) if total_inscritos > 0 else 0
             
             # Promedio de niños por sesión (opcional)
