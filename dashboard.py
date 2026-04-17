@@ -72,7 +72,11 @@ if df_raw is not None:
     # --- BARRA LATERAL (FILTROS) ---
     st.sidebar.header("Filtros del Dashboard")
     
-    sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_raw['Institucion'].unique().tolist()))
+    sel_inst = st.sidebar.multiselect(
+    "Seleccionar Institución(es):", 
+    options=sorted(df_raw['Institucion'].unique().tolist()),
+    default=[] # Si está vacío, entenderemos que son "Todas"
+    )
     sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_raw['Grado'].unique().tolist()))
     sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_raw['Curso'].unique().tolist()))
     sel_sesion = st.sidebar.selectbox("Seleccionar Sesion:", ['Todos'] + sorted(df_raw['Sesion'].unique().tolist()))
@@ -82,12 +86,14 @@ if df_raw is not None:
 
     # --- LÓGICA DE FILTRADO ---
     df_filtered = df_raw.copy()
-    if sel_inst != 'Todas':
-        df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
+    if sel_inst:
+        df_filtered = df_filtered[df_filtered['Institucion'].isin(sel_inst)]
     if sel_grado != 'Todos':
         df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
     if sel_curso != 'Todos':
         df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
+    if sel_sesion != 'Todas':
+        df_filtered = df_filtered[df_filtered['Sesion'] == sel_sesion]
     if len(sel_dates) == 2:
         df_filtered = df_filtered[(df_filtered['Date'].dt.date >= sel_dates[0]) & 
                                   (df_filtered['Date'].dt.date <= sel_dates[1])]
