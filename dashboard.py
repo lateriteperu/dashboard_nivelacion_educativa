@@ -89,15 +89,21 @@ if df_raw is not None:
 
     # --- LÓGICA DE FILTRADO ---
     df_filtered = df_raw.copy()
-    if sel_inst != 'Todas':
-        df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
-    if sel_grado != 'Todos':
-        df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
-    if sel_curso != 'Todos':
-        df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
-    if len(sel_dates) == 2:
-        df_filtered = df_filtered[(df_filtered['Date'].dt.date >= sel_dates[0]) & 
-                                  (df_filtered['Date'].dt.date <= sel_dates[1])]
+
+if sel_inst != 'Todas':
+    df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
+if sel_grado != 'Todos':
+    df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
+if sel_curso != 'Todos':
+    df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
+if sel_sesion != 'Todos':
+    df_filtered = df_filtered[df_filtered['Sesion'] == sel_sesion]
+
+if len(sel_dates) == 2:
+    df_filtered = df_filtered[
+        (df_filtered['Date'].dt.date >= sel_dates[0]) & 
+        (df_filtered['Date'].dt.date <= sel_dates[1])
+    ]
 
     st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
     st.markdown("---")
