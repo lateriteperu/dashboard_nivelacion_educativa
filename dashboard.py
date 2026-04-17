@@ -142,7 +142,7 @@ with tab1:
         m1.metric("Número de sesiones", num_sesiones)
         m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h")
         m3.metric("Promedio asistencia", f"{prom_niños:.1f} alum.")
-        m4.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%")
+        m4.metric("Promedio de asistencia (%)", f"{asistencia_global:.1f}%")
 
         st.markdown("---")
         st.subheader("👥Tendencia Diaria de Asistencia")
@@ -247,6 +247,24 @@ with tab1:
             st.caption("🔍 Monitorea si este grupo crece; son alumnos que asistieron una vez y no volvieron.")
 
         st.markdown("---")
+
+        with st.expander("📂 Ver detalle de datos filtrados (Raw Data)"):
+            # Seleccionamos las columnas más importantes para no saturar la vista
+            cols_mostrar = [
+                'Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 
+                'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia', 'Horas', 'una_vez_asistencia', 'Pct_Una_Asistencia', 'nunca_asistencia', 'Pct_Nunca_Asistencia', 
+            ]
+            
+            # Formateamos la fecha para que se vea mejor en la tabla
+            df_tabla = df_filtered[cols_mostrar].copy()
+            df_tabla['Date'] = df_tabla['Date'].dt.strftime('%d-%m-%Y')
+            
+            st.dataframe(
+                df_tabla.sort_values('Date', ascending=False), 
+                use_container_width=True,
+                hide_index=True
+            )
+            st.caption("Esta tabla muestra los registros exactos que están alimentando los gráficos superiores.")
 
     # --- TAB 2: NOTAS ---
 with tab2:
