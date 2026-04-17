@@ -93,7 +93,7 @@ if df_raw is not None:
     st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
     st.markdown("---")
 
-    tab1, tab2 = st.tabs(["📋 Asistencia", "📝 Notas"])
+    tab1, tab2 = st.tabs(["📋 Asistencia", "📝 Rendimiento Académico"])
 
     # --- TAB 1: ASISTENCIA ---
 with tab1:
