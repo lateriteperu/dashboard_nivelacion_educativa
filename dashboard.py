@@ -210,31 +210,41 @@ with tab1:
             Si la línea sube significa que el compromiso está en proceso de mejora.
         """)
 
-        # --- ANÁLISIS DE PERMANENCIA Y DESERCIÓN ---
         st.subheader("🚩 Análisis de Permanencia y Deserción")
         col_fid1, col_fid2 = st.columns(2)
-            
+        
+        # Agrupamos por fecha para ver la evolución de estos indicadores
+        df_fidelidad_diaria = df_filtered.groupby('Date')[['Pct_Nunca_Asistencia', 'Pct_Una_Asistencia']].mean().reset_index()
+        
         with col_fid1:
-                pct_nunca = df_filtered['Pct_Nunca_Asistencia'].mean()
-                fig_nunca = px.bar(
-                    x=["Nunca han asistido"], y=[pct_nunca],
-                    title="% Estudiantes que NUNCA asistieron",
-                    labels={'x': '', 'y': 'Porcentaje (%)'},
-                    color_discrete_sequence=['#ef553b']
-                )
-                fig_nunca.update_yaxes(range=[0, 100])
-                st.plotly_chart(fig_nunca, use_container_width=True)
+            fig_nunca_daily = px.bar(
+                df_fidelidad_diaria,
+                x='Date', 
+                y='Pct_Nunca_Asistencia',
+                title="Evolución: % Estudiantes que NUNCA asistieron",
+                labels={'Date': 'Fecha', 'Pct_Nunca_Asistencia': 'Porcentaje (%)'},
+                color_discrete_sequence=['#ef553b'],
+                text_auto='.1f'
+            )
+            fig_nunca_daily.update_yaxes(range=[0, 100])
+            fig_nunca_daily.update_layout(xaxis_tickformat='%d %b')
+            st.plotly_chart(fig_nunca_daily, use_container_width=True)
+            st.caption("🔍 Un descenso en estas barras significa que estamos captando alumnos nuevos.")
 
         with col_fid2:
-                pct_una = df_filtered['Pct_Una_Asistencia'].mean()
-                fig_una = px.bar(
-                    x=["Asistieron solo 1 vez"], y=[pct_una],
-                    title="% Estudiantes con RIESGO de Abandono",
-                    labels={'x': '', 'y': 'Porcentaje (%)'},
-                    color_discrete_sequence=['#fecb52']
-                )
-                fig_una.update_yaxes(range=[0, 100])
-                st.plotly_chart(fig_una, use_container_width=True)
+            fig_una_daily = px.bar(
+                df_fidelidad_diaria,
+                x='Date', 
+                y='Pct_Una_Asistencia',
+                title="Evolución: % Estudiantes con RIESGO de Abandono",
+                labels={'Date': 'Fecha', 'Pct_Una_Asistencia': 'Porcentaje (%)'},
+                color_discrete_sequence=['#fecb52'],
+                text_auto='.1f'
+            )
+            fig_una_daily.update_yaxes(range=[0, 100])
+            fig_una_daily.update_layout(xaxis_tickformat='%d %b')
+            st.plotly_chart(fig_una_daily, use_container_width=True)
+            st.caption("🔍 Monitorea si este grupo crece; son alumnos que asistieron una vez y no volvieron.")
 
         st.markdown("---")
 
