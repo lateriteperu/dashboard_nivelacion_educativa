@@ -236,7 +236,7 @@ with tab1:
                 fig_una.update_yaxes(range=[0, 100])
                 st.plotly_chart(fig_una, use_container_width=True)
 
-            st.markdown("---")
+        st.markdown("---")
 
     # --- TAB 2: NOTAS ---
 with tab2:
