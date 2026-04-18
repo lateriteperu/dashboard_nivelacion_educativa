@@ -218,38 +218,59 @@ if df_raw is not None:
             st.markdown("---")
 
             # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
-        # --- SECCIÓN 3: DISTRIBUCIÓN DE NIVELES (SIN CEROS FALSOS) ---
-        st.subheader("📊 Distribución de Niveles de Aprendizaje")
+        st.subheader("📊 Distribución Total: Niveles de Aprendizaje y No Evaluados")
         
         if not df_filtered.empty:
-            # Agrupamos: Pandas por defecto ignora los NaN en el promedio (.mean)
+            # 1. Agrupamos y promediamos
             df_niveles = df_filtered.groupby('Date')[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].mean().reset_index()
             
-            # Convertimos a formato largo para Plotly
+            # 2. Calculamos los No Evaluados (Diferencia para llegar a 100)
+            # Usamos fillna(0) solo para el cálculo matemático
+            df_niveles['Pct_No_Evaluados'] = 100 - df_niveles[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].sum(axis=1)
+            df_niveles['Pct_No_Evaluados'] = df_niveles['Pct_No_Evaluados'].clip(lower=0)
+            
+            # 3. Transformamos a formato largo
             df_melted = df_niveles.melt(
                 id_vars='Date', 
-                value_vars=['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio'],
-                var_name='Nivel', 
+                value_vars=['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio', 'Pct_No_Evaluados'],
+                var_name='Estado', 
                 value_name='Porcentaje'
             )
 
-            # ELIMINAMOS las filas donde el Porcentaje es NaN para que Plotly no de TypeError
+            # Limpiamos los nombres: quitamos 'Pct_' y cambiamos guiones bajos por espacios
+            df_melted['Estado'] = df_melted['Estado'].str.replace('Pct_', '').str.replace('_', ' ')
+            
+            # REPARACIÓN CRÍTICA: Eliminamos cualquier fila que haya quedado con Porcentaje nulo
             df_melted = df_melted.dropna(subset=['Porcentaje'])
-            
-            df_melted['Nivel'] = df_melted['Nivel'].str.replace('Pct_', '')
-            
-            # Crear el gráfico
-            fig_niveles = px.bar(
-                df_melted, 
-                x='Date', 
-                y='Porcentaje', 
-                color='Nivel',
-                barmode='stack',
-                barnorm='percent', 
-                title="Composición del Salón (Solo Estudiantes Evaluados)",
-                color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'},
-                text_auto='.1f'
-            )
-            
-            fig_niveles.update_layout(xaxis_tickformat='%d %b', bargap=0.3)
-            st.plotly_chart(fig_niveles, use_container_width=True)
+
+            # 4. Creación del gráfico con manejo de excepciones
+            try:
+                fig_niveles = px.bar(
+                    df_melted, 
+                    x='Date', 
+                    y='Porcentaje', 
+                    color='Estado',
+                    barmode='stack',
+                    title="Composición Total del Salón (Evaluados vs. No Evaluados)",
+                    # Asegúrate de que estos nombres coincidan con el .replace de arriba
+                    color_discrete_map={
+                        'Logro': '#00CC96',       # Verde
+                        'Proceso': '#FECB52',     # Amarillo
+                        'Inicio': '#EF553B',      # Rojo
+                        'No Evaluados': '#D3D3D3' # Gris
+                    },
+                    text_auto='.1f'
+                )
+                
+                fig_niveles.update_traces(textposition='inside', insidetextanchor='middle')
+                fig_niveles.update_layout(
+                    xaxis_tickformat='%d %b',
+                    bargap=0.3,
+                    yaxis_range=[0, 105],
+                    legend_title="Condición"
+                )
+                
+                st.plotly_chart(fig_niveles, use_container_width=True)
+                
+            except Exception as e:
+                st.error(f"Error al generar el gráfico de barras: {e}")
