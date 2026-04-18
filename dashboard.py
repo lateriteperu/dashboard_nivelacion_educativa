@@ -161,89 +161,89 @@ if df_raw is not None:
             )
             st.caption("Esta tabla muestra los registros exactos que están alimentando los gráficos superiores.")
             
+    # --- TAB 2: NOTAS ---
     with tab2:
-           st.header("🎯 Rendimiento Académico (Exit Tickets)")
-    
-    if not df_filtered.empty:
-        # --- PASO 1: PREPARACIÓN DE DATOS (Mover esto arriba es la clave) ---
-        # Agrupamos por fecha y grado para las líneas de tendencia
-        df_notas = df_filtered.groupby(['Date', 'Grado'])[['Pct_Logro', 'Pct_Puntaje']].mean().reset_index()
-        df_notas = df_notas.sort_values('Date') # Ordenar para que la línea sea fluida
-
-        # --- PASO 2: CÁLCULOS DE LOS INDICADORES RESUMEN ---
-        promedio_puntaje = df_filtered['Pct_Puntaje'].mean()
-        promedio_logro = df_filtered['Pct_Logro'].mean()
-        promedio_no_logro = 100 - promedio_logro
-
-        # Mostramos las métricas en 3 columnas
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Puntaje Promedio (% Exit ticket)", f"{promedio_puntaje:.1f}%")
-        m2.metric("Nivel Logro - Alcanzado", f"{promedio_logro:.1f}%")
-        m3.metric("Nivel Logro - No Alcanzado", f"{promedio_no_logro:.1f}%", delta_color="inverse")
-
-        st.markdown("---") 
-
-        # --- SECCIÓN 1: LOGRO (ARRIBA) ---
-        st.subheader("🎯 Porcentaje de Logro en Exit Ticket (%)")
-        fig_logro = px.line(
-            df_notas, 
-            x='Date', 
-            y='Pct_Logro', 
-            color='Grado',
-            title='% Estudiantes con Nivel de Logro',
-            markers=True,
-            labels={'Pct_Logro': 'Logro (%)'}
-        )
-        fig_logro.update_traces(connectgaps=True)
-        st.plotly_chart(fig_logro, use_container_width=True)
+        st.header("🎯 Rendimiento Académico (Exit Tickets)")
         
-        st.info("💡 **Nivel de Logro:** Porcentaje de estudiantes que respondieron el 80% o más correctamente.")
+        if not df_filtered.empty:
+            # --- 1. PRIMERO PREPARAMOS LOS DATOS (Esto resuelve el NameError) ---
+            df_notas = df_filtered.groupby(['Date', 'Grado'])[['Pct_Logro', 'Pct_Puntaje']].mean().reset_index()
+            df_notas = df_notas.sort_values('Date')
 
-        st.markdown("---")
+            # --- 2. CÁLCULOS DE LOS INDICADORES RESUMEN ---
+            promedio_puntaje = df_filtered['Pct_Puntaje'].mean()
+            promedio_logro = df_filtered['Pct_Logro'].mean()
+            promedio_no_logro = 100 - promedio_logro
 
-        # --- SECCIÓN 2: PUNTAJE (ABAJO) ---
-        st.subheader("🌟 Puntaje del Exit Ticket (%)")
-        fig_puntaje = px.line(
-            df_notas, 
-            x='Date', 
-            y='Pct_Puntaje', 
-            color='Grado',
-            title='Promedio de Respuestas Correctas',
-            markers=True,
-            labels={'Pct_Puntaje': 'Puntaje (%)'}
-        )
-        fig_puntaje.update_traces(connectgaps=True)
-        st.plotly_chart(fig_puntaje, use_container_width=True)
+            # Métricas en 3 columnas
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Puntaje Promedio (% Exit ticket)", f"{promedio_puntaje:.1f}%")
+            m2.metric("Nivel Logro - Alcanzado", f"{promedio_logro:.1f}%")
+            m3.metric("Nivel Logro - No Alcanzado", f"{promedio_no_logro:.1f}%", delta_color="inverse")
 
-        st.markdown("---")
+            st.markdown("---") 
 
-        # --- SECCIÓN 3: DISTRIBUCIÓN DE NIVELES ---
-        st.subheader("📊 Distribución de Niveles de Aprendizaje")
-        
-        df_niveles = df_filtered.groupby('Date')[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].mean().reset_index()
-        
-        df_melted = df_niveles.melt(
-            id_vars='Date', 
-            value_vars=['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio'],
-            var_name='Nivel de Aprendizaje', 
-            value_name='Porcentaje'
-        )
-        
-        fig_niveles = px.bar(
-            df_melted, 
-            x='Date', 
-            y='Porcentaje', 
-            color='Nivel de Aprendizaje',
-            barmode='stack',
-            color_discrete_map={
-                'Pct_Logro': '#00CC96',   # Verde
-                'Pct_Proceso': '#FECB52', # Amarillo
-                'Pct_Inicio': '#EF553B'   # Rojo
-            },
-            text_auto='.1f'
-        )
-        fig_niveles.update_layout(xaxis_tickformat='%d %b')
-        st.plotly_chart(fig_niveles, use_container_width=True)
+            # --- 3. SECCIÓN: LOGRO (Línea de tiempo) ---
+            st.subheader("🎯 Porcentaje de Logro en Exit Ticket (%)")
+            fig_logro = px.line(
+                df_notas, # Ahora df_notas ya existe
+                x='Date', 
+                y='Pct_Logro', 
+                color='Grado',
+                title='% Estudiantes con Nivel de Logro',
+                markers=True,
+                labels={'Pct_Logro': 'Logro (%)'}
+            )
+            fig_logro.update_traces(connectgaps=True)
+            st.plotly_chart(fig_logro, use_container_width=True)
+            
+            st.info("💡 **Nivel de Logro:** % de estudiantes que respondieron el 80% o más correctamente.")
 
-    else:
-        st.warning("No hay datos disponibles para los filtros seleccionados.")
+            st.markdown("---")
+
+            # --- 4. SECCIÓN: PUNTAJE (Línea de tiempo) ---
+            st.subheader("🌟 Puntaje del Exit Ticket (%)")
+            fig_puntaje = px.line(
+                df_notas, # Ahora df_notas ya existe
+                x='Date', 
+                y='Pct_Puntaje', 
+                color='Grado',
+                title='Promedio de Respuestas Correctas',
+                markers=True,
+                labels={'Pct_Puntaje': 'Puntaje (%)'}
+            )
+            fig_puntaje.update_traces(connectgaps=True)
+            st.plotly_chart(fig_puntaje, use_container_width=True)
+
+            st.markdown("---")
+
+            # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
+            st.subheader("📊 Distribución de Niveles de Aprendizaje")
+            
+            df_niveles = df_filtered.groupby('Date')[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].mean().reset_index()
+            
+            df_melted = df_niveles.melt(
+                id_vars='Date', 
+                value_vars=['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio'],
+                var_name='Nivel de Aprendizaje', 
+                value_name='Porcentaje'
+            )
+            
+            fig_niveles = px.bar(
+                df_melted, 
+                x='Date', 
+                y='Porcentaje', 
+                color='Nivel de Aprendizaje',
+                barmode='stack',
+                color_discrete_map={
+                    'Pct_Logro': '#00CC96',   # Verde
+                    'Pct_Proceso': '#FECB52', # Amarillo
+                    'Pct_Inicio': '#EF553B'   # Rojo
+                },
+                text_auto='.1f'
+            )
+            fig_niveles.update_layout(xaxis_tickformat='%d %b')
+            st.plotly_chart(fig_niveles, use_container_width=True)
+
+        else:
+            st.warning("No hay datos disponibles para los filtros seleccionados.")
