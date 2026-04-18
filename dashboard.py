@@ -64,7 +64,7 @@ def load_data():
         cols_pct = ['Pct_Asistencia','Pct_Logro','Pct_Inicio','Pct_Proceso','Pct_Puntaje','Pct_Una_Asistencia', 'Pct_Nunca_Asistencia', 'Pct_Alto_Rendimiento', 'Pct_Riesgo']
         for col in cols_pct:
             if col in df.columns:
-                if df[col].max() < 1.0:
+                if df[col].max() <= 1.0:
                    df[col] = df[col] * 100
         
         return df
