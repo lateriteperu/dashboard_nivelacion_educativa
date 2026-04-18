@@ -221,14 +221,14 @@ if df_raw is not None:
 
 
 # --- 3. SECCIÓN: LOGRO (Línea de tiempo) ---
-        st.subheader("🌟 Respuestas Correctas en el Exit Ticket (% total de preguntas)")
+        st.subheader("🌟 Respuestas Correctas en el Exit Ticket ")
         
         fig_puntaje = px.line(
             df_notas, # Ahora df_notas ya existe
             x='Date', 
             y='Pct_Puntaje', 
             color='Grado',
-            title='Porcentaje Respuestas Correctas',
+            title='Porcentaje de Respuestas Correctas en el Exit Ticket (% total de preguntas)',
             markers=True,
             labels={'Pct_Puntaje': 'Puntaje (%)'}
         )
@@ -274,7 +274,7 @@ if df_raw is not None:
                     y='Porcentaje', 
                     color='Estado',
                     barmode='stack',
-                    title="Composición Total del Salón (Evaluados vs. No Evaluados)",
+                    title="Evolución del Desempeño Académico en los Exit Tickets",
                     # Asegúrate de que estos nombres coincidan con el .replace de arriba
                     color_discrete_map={
                         'Logro': '#00CC96',       # Verde
@@ -294,10 +294,10 @@ if df_raw is not None:
                 )
                 
                 st.plotly_chart(fig_niveles, use_container_width=True)
-                st.info("""💡 **Guía de Interpretación:** Cada columna representa el universo total de estudiantes registrados. Los niveles se definen según el desempeño en el *Exit Ticket*:
-                ***Logro:** Estudiantes con 80% o más de respuestas correctas.
-                ***En Proceso:** Estudiantes con un desempeño entre el 50% y 79%.
-                ***Inicio:** Estudiantes con un desempeño inferior al 50%.
+                st.info("""💡 **¿Cómo interpretar este gráfico?:** Cada columna representa el universo total de estudiantes registrados. Los niveles se definen según el desempeño en el *Exit Ticket*:
+                **Logro:** Estudiantes con 80% o más de respuestas correctas.
+                **En Proceso:** Estudiantes con un desempeño entre el 50% y 79%.
+                **Inicio:** Estudiantes con un desempeño inferior al 50%.
                 """)
             except Exception as e:
                 st.error(f"Error al generar el gráfico de barras: {e}")
