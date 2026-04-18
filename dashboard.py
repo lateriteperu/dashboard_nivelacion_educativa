@@ -202,7 +202,7 @@ if df_raw is not None:
             m1.metric(
                 label="Número de Exit Tickets Aplicados", 
                 value=f"{numero_aplicados}", # Ahora refleja días/sesiones únicas
-                help="Cada sesión es cerrada con una evaluación de salida (exit ticket)."
+                help="Cada sesión es finalizada con una evaluación de salida (exit ticket)."
             )
             
             m2.metric(
