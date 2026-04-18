@@ -172,46 +172,46 @@ if df_raw is not None:
             # --- 1. PRIMERO PREPARAMOS LOS DATOS (Esto resuelve el NameError) ---
             df_notas = df_filtered.groupby(['Date', 'Grado'])[['Pct_Logro', 'Pct_Puntaje']].mean().reset_index()
             df_notas = df_notas.sort_values('Date')
-
-# --- 1. CÁLCULOS DE MÉTRICAS (BASADO EN CONTEO DE ALUMNOS) ---
+        
+            # --- 1. CÁLCULOS DE MÉTRICAS ACTUALIZADOS ---
             
-            # Métrica 1: % de Exit Tickets Aplicados
-            total_sesiones = len(df_filtered)
-            sesiones_con_puntaje = df_filtered['Pct_Puntaje'].notna().sum()
-            pct_aplicacion = (sesiones_con_puntaje / total_sesiones) * 100 if total_sesiones > 0 else 0
+            # Métrica 1: Número de Exit Tickets Aplicados (Cantidad Real)
+            # Contamos cuántas filas tienen un puntaje registrado
+            numero_aplicados = int(df_filtered['Pct_Puntaje'].notna().sum())
             
-            # Métrica 2: Puntaje Promedio (Promedio de las notas registradas)
-            promedio_puntaje_real = df_filtered['Pct_Puntaje'].mean()
+            # Métrica 2: Puntaje Promedio (CORRECCIÓN DE ESCALA)
+            promedio_puntaje_raw = df_filtered['Pct_Puntaje'].mean()
+            # Si el promedio es muy bajo (menor o igual a 1), multiplicamos por 100
+            if promedio_puntaje_raw <= 1.0:
+                promedio_puntaje_real = promedio_puntaje_raw * 100
+            else:
+                promedio_puntaje_real = promedio_puntaje_raw
             
             # Métrica 3: % de Estudiantes en Logro (Ponderado)
-            # Sumamos todos los niños en cada categoría para tener el universo total
             total_estudiantes_evaluados = df_filtered[['Logro', 'Proceso', 'Inicio']].sum().sum()
             total_estudiantes_logro = df_filtered['Logro'].sum()
             
-            if total_estudiantes_evaluados > 0:
-                promedio_logro_real = (total_estudiantes_logro / total_estudiantes_evaluados) * 100
-            else:
-                promedio_logro_real = 0
+            promedio_logro_real = (total_estudiantes_logro / total_estudiantes_evaluados * 100) if total_estudiantes_evaluados > 0 else 0
 
             # --- 2. VISUALIZACIÓN EN COLUMNAS ---
             m1, m2, m3 = st.columns(3)
             
             m1.metric(
                 label="Exit Tickets Aplicados", 
-                value=f"{pct_aplicacion:.1f}%",
-                help="Proporción de sesiones planificadas que cuentan con registros de notas."
+                value=f"{numero_aplicados} und.", # Ahora muestra el número entero
+                help="Cantidad total de sesiones donde se registró la evaluación."
             )
             
             m2.metric(
                 label="Puntaje Promedio", 
-                value=f"{promedio_puntaje_real:.1f}%",
-                help="Promedio de respuestas correctas de los estudiantes evaluados."
+                value=f"{promedio_puntaje_real:.1f}%", # Ahora debería marcar ~60% o similar
+                help="Promedio porcentual de respuestas correctas."
             )
             
             m3.metric(
                 label="Estudiantes en Logro", 
                 value=f"{promedio_logro_real:.1f}%",
-                help="Porcentaje total de alumnos que alcanzaron el nivel de Logro (>=80%) sobre el total de evaluados."
+                help="Porcentaje total de alumnos en nivel de Logro sobre el universo evaluado."
             )
 
             st.markdown("---")
