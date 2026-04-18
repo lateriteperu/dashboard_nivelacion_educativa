@@ -1,35 +1,29 @@
 q3_curso,q4_institucion,q5_grado,q7_sesion,n_alumnos,q8_fecha_clase,pct_puntaje,duration_h,asistencia,logro,proceso,inicio,alto_rendimiento,riesgo,una_vez_asistencia,nunca_asistencia,pct_asistencia,pct_logro,pct_proceso,pct_alto_rendimiento,pct_riesgo,pct_una_asistencia,pct_nunca_asistencia
 Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de reforzamiento,29,13apr2026,.3125,2.6666667,4,0,2,1,6,2,11,8,.13793103,0,.5,1.5,.5,.37931034,.27586207
+Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de reforzamiento,29,16apr2026,.5,2.6666667,3,0,3,0,5,2,10,8,.10344828,0,1,1.6666666,.66666669,.34482759,.27586207
 Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,15apr2026,.5,1.3333334,2,0,1,0,6,2,11,8,.068965517,0,.5,3,1,.37931034,.27586207
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de reforzamiento,22,06apr2026,.46875,2.6666667,8,4,1,2,4,2,8,12,.36363637,.5,.125,.5,.25,.36363637,.54545456
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de reforzamiento,29,09apr2026,.6875,2.6666667,15,8,1,1,6,2,11,8,.51724136,.53333336,.06666667,.40000001,.13333334,.37931034,.27586207
-Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,08apr2026,,1.3333334,9,0,0,0,2,1,9,15,.31034482,0,0,.22222222,.11111111,.31034482,.51724136
+Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,08apr2026,,1.3333334,9,0,0,0,2,1,7,15,.31034482,0,0,.22222222,.11111111,.24137931,.51724136
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,11apr2026,.33333334,1.3333334,3,0,1,0,6,2,11,8,.10344828,0,.33333334,2,.66666669,.37931034,.27586207
-Taller de Habilidades Socioemocionales,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Taller,29,08apr2026,,1.3333334,10,0,0,0,2,1,7,15,.34482759,0,0,.2,.1,.24137931,.51724136
-Taller de Habilidades Socioemocionales,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Taller,29,11apr2026,,1.3333334,3,0,0,0,6,2,11,8,.10344828,0,0,2,.66666669,.37931034,.27586207
 Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de reforzamiento,23,14apr2026,.64999998,2.6666667,5,3,2,0,2,0,3,13,.2173913,.60000002,.40000001,.40000001,0,.13043478,.56521738
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de reforzamiento,23,07apr2026,.69999999,2.6666667,5,4,0,0,4,0,5,18,.2173913,.80000001,0,.80000001,0,.2173913,.78260869
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de reforzamiento,23,10apr2026,.8125,2.6666667,4,4,0,0,4,0,4,13,.17391305,1,0,1,0,.17391305,.56521738
-Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de consolidación (miércoles y sábados),23,08apr2026,,1.3333334,5,0,0,0,2,0,6,15,.2173913,0,0,.40000001,0,.26086956,.65217394
-Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de consolidación (miércoles y sábados),23,11apr2026,.69999999,1.3333334,5,4,1,0,2,0,3,13,.2173913,.80000001,.2,.40000001,0,.13043478,.56521738
-Taller de Habilidades Socioemocionales,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Taller,23,08apr2026,,1.3333334,5,0,0,0,2,0,3,15,.2173913,0,0,.40000001,0,.13043478,.65217394
-Taller de Habilidades Socioemocionales,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Taller,23,11apr2026,,1.3333334,5,0,0,0,2,0,3,13,.2173913,0,0,.40000001,0,.13043478,.56521738
+Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de consolidación (miércoles y sábados),23,08apr2026,,1.3333334,5,0,0,0,2,0,5,15,.2173913,0,0,.40000001,0,.2173913,.65217394
+Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de consolidación (miércoles y sábados),23,11apr2026,.69999999,1.3333334,5,4,1,0,3,0,3,13,.2173913,.80000001,.2,.60000002,0,.13043478,.56521738
 Lectoescritura,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de reforzamiento,24,06apr2026,.61842108,2.6666667,19,14,2,2,14,2,19,4,.79166669,.7368421,.10526316,.7368421,.10526316,.79166669,.16666667
 Lectoescritura,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de reforzamiento,21,07apr2026,.55263156,2.6666667,19,9,7,2,9,2,19,2,.90476191,.47368422,.36842105,.47368422,.10526316,.90476191,.095238097
 Lectoescritura,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de consolidación (miércoles y sábados),22,08apr2026,.52499998,1.3333334,11,1,9,0,1,0,11,11,.5,.090909094,.81818181,.090909094,0,.5,.5
 Lectoescritura,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de consolidación (miércoles y sábados),23,08apr2026,.5,1.3333334,5,0,6,0,0,0,5,18,.2173913,0,1.2,0,0,.2173913,.78260869
 Matemática,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de reforzamiento,23,13apr2026,.5,2.6666667,16,7,3,2,6,1,13,6,.69565219,.4375,.1875,.375,.0625,.56521738,.26086956
 Matemática,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de reforzamiento,22,14apr2026,.6388889,2.6666667,18,10,4,0,6,0,9,3,.81818181,.55555558,.22222222,.33333334,0,.40909091,.13636364
-Matemática,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de consolidación (miércoles y sábados),22,15apr2026,.58333331,1.3333334,3,1,2,0,2,0,5,3,.13636364,.33333334,.66666669,.66666669,0,.22727273,.13636364
+Matemática,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de consolidación (miércoles y sábados),22,15apr2026,.58333331,1.3333334,3,1,2,0,4,0,7,3,.13636364,.33333334,.66666669,1.3333334,0,.31818181,.13636364
 Matemática,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Sesión de consolidación (miércoles y sábados),23,15apr2026,.70454544,1.3333334,11,8,2,0,6,0,7,4,.47826087,.72727275,.18181819,.54545456,0,.30434781,.17391305
-Taller de Habilidades Socioemocionales,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Taller,22,15apr2026,,1.3333334,12,0,0,0,1,0,4,3,.54545456,0,0,.083333336,0,.18181819,.13636364
-Taller de Habilidades Socioemocionales,I.E Monseñor Javier Aris Huarte (Kirigueti),4to de Secundaria,Taller,23,15apr2026,,1.3333334,18,0,0,0,0,0,1,4,.78260869,0,0,0,0,.043478262,.17391305
 Lectoescritura,I.E Monseñor Javier Aris Huarte (Kirigueti),5to de Secundaria,Sesión de reforzamiento,22,09apr2026,.66666669,2.6666667,18,13,4,1,13,1,18,4,.81818181,.72222221,.22222222,.72222221,.055555556,.81818181,.18181819
 Lectoescritura,I.E Monseñor Javier Aris Huarte (Kirigueti),5to de Secundaria,Sesión de reforzamiento,21,10apr2026,.53333336,2.6666667,15,7,3,0,7,0,15,6,.71428573,.46666667,.2,.46666667,0,.71428573,.2857143
 Lectoescritura,I.E Monseñor Javier Aris Huarte (Kirigueti),5to de Secundaria,Sesión de consolidación (miércoles y sábados),21,11apr2026,1.6666666,1.3333334,6,5,0,1,7,0,9,6,.2857143,.83333331,0,1.1666666,0,.42857143,.2857143
 Matemática,I.E Monseñor Javier Aris Huarte (Kirigueti),5to de Secundaria,Sesión de reforzamiento,22,16apr2026,.75,2.6666667,8,6,1,0,3,1,6,2,.36363637,.75,.125,.375,.125,.27272728,.090909094
-Taller de Habilidades Socioemocionales,I.E Monseñor Javier Aris Huarte (Kirigueti),5to de Secundaria,Taller,21,15apr2026,,1.3333334,19,0,0,0,0,1,4,2,.90476191,0,0,0,.052631579,.19047619,.095238097
-Taller de Habilidades Socioemocionales,I.E Monseñor Javier Aris Huarte (Kirigueti),5to de Secundaria,Taller,22,15apr2026,,1.3333334,16,0,0,0,3,1,6,2,.72727275,0,0,.1875,.0625,.27272728,.090909094
+Matemática,I.E Monseñor Javier Aris Huarte (Kirigueti),5to de Secundaria,Sesión de reforzamiento,21,17apr2026,.7361111,2.6666667,18,13,4,0,0,0,0,2,.85714287,.72222221,.22222222,0,0,0,.095238097
 Lectoescritura,I.E Juan Santos Atahualpa (Camisea),4to de Secundaria,Sesión de reforzamiento,35,06apr2026,.70769233,2.6666667,13,6,5,0,6,0,13,1,.37142858,.46153846,.38461539,.46153846,0,.37142858,.028571429
 Lectoescritura,I.E Juan Santos Atahualpa (Camisea),4to de Secundaria,Sesión de reforzamiento,35,09apr2026,.75,2.6666667,6,4,1,0,10,0,13,15,.17142858,.66666669,.16666667,1.6666666,0,.37142858,.42857143
 Lectoescritura,I.E Juan Santos Atahualpa (Camisea),4to de Secundaria,Sesión de consolidación (miércoles y sábados),35,08apr2026,.72727275,1.3333334,11,9,2,0,10,0,14,16,.31428573,.81818181,.18181819,.90909094,0,.40000001,.45714286
@@ -42,6 +36,7 @@ Lectoescritura,I.E Juan Santos Atahualpa (Camisea),5to de Secundaria,Sesión de 
 Lectoescritura,I.E Juan Santos Atahualpa (Camisea),5to de Secundaria,Sesión de consolidación (miércoles y sábados),35,08apr2026,.66666669,1.3333334,3,2,1,0,6,1,14,19,.085714288,.66666669,.33333334,2,.33333334,.40000001,.54285717
 Lectoescritura,I.E Juan Santos Atahualpa (Camisea),5to de Secundaria,Sesión de consolidación (miércoles y sábados),35,11apr2026,1,1.3333334,2,2,0,0,6,1,13,19,.057142857,1,0,3,.5,.37142858,.54285717
 Matemática,I.E Juan Santos Atahualpa (Camisea),5to de Secundaria,Sesión de reforzamiento,35,14apr2026,.63333333,2.6666667,18,8,7,2,5,1,5,15,.51428574,.44444445,.3888889,.27777779,.055555556,.14285715,.42857143
+Matemática,I.E Juan Santos Atahualpa (Camisea),5to de Secundaria,Sesión de reforzamiento,35,17apr2026,.5714286,2.6666667,7,1,4,0,2,1,2,15,.2,.14285715,.5714286,.2857143,.14285715,.057142857,.42857143
 Matemática,I.E Juan Santos Atahualpa (Camisea),5to de Secundaria,Sesión de consolidación (miércoles y sábados),35,15apr2026,.40000001,1.3333334,1,0,0,0,4,1,4,15,.028571429,0,0,4,1,.11428571,.42857143
 Lectoescritura,I.E N° 64518 (Segakiato),4to de Secundaria,Sesión de reforzamiento,10,13apr2026,.35000002,2.6666667,8,0,2,0,0,0,0,1,.80000001,0,.25,0,0,0,.1
 Lectoescritura,I.E N° 64518 (Segakiato),4to de Secundaria,Sesión de reforzamiento,10,14apr2026,.55000001,2.6666667,5,1,4,0,0,0,0,1,.5,.2,.80000001,0,0,0,.1
@@ -55,6 +50,7 @@ Matemática,I.E N° 64518 (Segakiato),4to de Secundaria,Sesión de consolidació
 Matemática,I.E N° 64518 (Segakiato),4to de Secundaria,Sesión de consolidación (miércoles y sábados),10,11apr2026,.60000002,1.3333334,6,2,2,0,0,0,0,1,.60000002,.33333334,.33333334,0,0,0,.1
 Lectoescritura,I.E N° 64518 (Segakiato),5to de Secundaria,Sesión de reforzamiento,5,13apr2026,.039999999,2.6666667,1,0,0,4,0,0,0,1,.2,0,0,0,0,0,.2
 Lectoescritura,I.E N° 64518 (Segakiato),5to de Secundaria,Sesión de reforzamiento,5,14apr2026,.75,2.6666667,1,1,0,0,0,0,0,1,.2,1,0,0,0,0,.2
+Lectoescritura,I.E N° 64518 (Segakiato),5to de Secundaria,Sesión de reforzamiento,5,16apr2026,,2.6666667,0,0,0,0,0,0,0,1,0,,,,,0,.2
 Lectoescritura,I.E N° 64518 (Segakiato),5to de Secundaria,Sesión de consolidación (miércoles y sábados),5,15apr2026,.58333331,1.3333334,3,2,0,1,0,0,0,1,.60000002,.66666669,0,0,0,0,.2
 Matemática,I.E N° 64518 (Segakiato),5to de Secundaria,Sesión de reforzamiento,4,06apr2026,.40000001,2.6666667,2,0,1,0,0,0,2,2,.5,0,.5,0,0,.5,.5
 Matemática,I.E N° 64518 (Segakiato),5to de Secundaria,Sesión de reforzamiento,5,07apr2026,.5,2.6666667,2,0,1,0,0,0,0,3,.40000001,0,.5,0,0,0,.60000002
