@@ -44,6 +44,9 @@ def load_data():
             'asistencia': 'Asistencia_Absoluta',
             'duration_h': 'Horas',
             'n_alumnos': 'Alumnos',
+            'logro': 'Logro',
+            'proceso': 'Proceso',
+            'inicio': 'Inicio',
             'pct_asistencia': 'Pct_Asistencia',
             'pct_logro': 'Pct_Logro',
             'pct_inicio': 'Pct_Inicio',
@@ -170,74 +173,66 @@ if df_raw is not None:
             df_notas = df_filtered.groupby(['Date', 'Grado'])[['Pct_Logro', 'Pct_Puntaje']].mean().reset_index()
             df_notas = df_notas.sort_values('Date')
 
-            # --- 2. CÁLCULOS DE LOS INDICADORES RESUMEN ---
-            promedio_puntaje = df_filtered['Pct_Puntaje'].mean()
-            promedio_logro = df_filtered['Pct_Logro'].mean()
-            promedio_no_logro = 100 - promedio_logro
+# --- 1. CÁLCULOS DE MÉTRICAS (BASADO EN CONTEO DE ALUMNOS) ---
+            
+            # Métrica 1: % de Exit Tickets Aplicados
+            total_sesiones = len(df_filtered)
+            sesiones_con_puntaje = df_filtered['Pct_Puntaje'].notna().sum()
+            pct_aplicacion = (sesiones_con_puntaje / total_sesiones) * 100 if total_sesiones > 0 else 0
+            
+            # Métrica 2: Puntaje Promedio (Promedio de las notas registradas)
+            promedio_puntaje_real = df_filtered['Pct_Puntaje'].mean()
+            
+            # Métrica 3: % de Estudiantes en Logro (Ponderado)
+            # Sumamos todos los niños en cada categoría para tener el universo total
+            total_estudiantes_evaluados = df_filtered[['Logro', 'Proceso', 'Inicio']].sum().sum()
+            total_estudiantes_logro = df_filtered['Logro'].sum()
+            
+            if total_estudiantes_evaluados > 0:
+                promedio_logro_real = (total_estudiantes_logro / total_estudiantes_evaluados) * 100
+            else:
+                promedio_logro_real = 0
 
-            # Métricas en 3 columnas
+            # --- 2. VISUALIZACIÓN EN COLUMNAS ---
             m1, m2, m3 = st.columns(3)
-            m1.metric("Puntaje Promedio (% Exit ticket)", f"{promedio_puntaje:.1f}%")
-            m2.metric("Nivel Logro - Alcanzado", f"{promedio_logro:.1f}%")
-            m3.metric("Nivel Logro - No Alcanzado", f"{promedio_no_logro:.1f}%", delta_color="inverse")
-
-            st.markdown("---") 
-
-            # --- 3. SECCIÓN: LOGRO (Línea de tiempo) ---
-            st.subheader("🎯 Porcentaje de Logro en Exit Ticket (%)")
-            fig_logro = px.line(
-                df_notas, # Ahora df_notas ya existe
-                x='Date', 
-                y='Pct_Logro', 
-                color='Grado',
-                title='% Estudiantes con Nivel de Logro',
-                markers=True,
-                labels={'Pct_Logro': 'Logro (%)'}
-            )
-            fig_logro.update_traces(connectgaps=True)
-            st.plotly_chart(fig_logro, use_container_width=True)
             
-            st.info("💡 **Nivel de Logro:** % de estudiantes que respondieron el 80% o más correctamente.")
+            m1.metric(
+                label="Exit Tickets Aplicados", 
+                value=f"{pct_aplicacion:.1f}%",
+                help="Proporción de sesiones planificadas que cuentan con registros de notas."
+            )
+            
+            m2.metric(
+                label="Puntaje Promedio", 
+                value=f"{promedio_puntaje_real:.1f}%",
+                help="Promedio de respuestas correctas de los estudiantes evaluados."
+            )
+            
+            m3.metric(
+                label="Estudiantes en Logro", 
+                value=f"{promedio_logro_real:.1f}%",
+                help="Porcentaje total de alumnos que alcanzaron el nivel de Logro (>=80%) sobre el total de evaluados."
+            )
 
             st.markdown("---")
 
-            # --- 4. SECCIÓN: PUNTAJE (Línea de tiempo) ---
-        st.subheader("📊 Distribución de Frecuencia de Puntajes")
+# --- 3. SECCIÓN: LOGRO (Línea de tiempo) ---
+        st.subheader("🌟 Puntaje del Exit Ticket (%)")
         
-        if not df_filtered.empty:
-            # 1. Creamos una copia temporal para no alterar otros gráficos
-            df_hist = df_filtered.copy()
-            
-            # 2. Convertimos a número y si el máximo es <= 1, multiplicamos por 100
-            df_hist['Pct_Puntaje'] = pd.to_numeric(df_hist['Pct_Puntaje'], errors='coerce')
-            
-            # Forzamos la multiplicación si detectamos que son decimales
-            if df_hist['Pct_Puntaje'].mean() <= 1.0:
-                df_hist['Pct_Puntaje'] = df_hist['Pct_Puntaje'] * 100
-
-            # 3. Quitamos los nulos (estudiantes que no dieron examen) para que no ensucien el gráfico
-            df_hist = df_hist.dropna(subset=['Pct_Puntaje'])
-
-            # 4. Creamos el histograma
-            fig_dist_puntaje = px.histogram(
-                df_hist, 
-                x="Pct_Puntaje",
-                nbins=20, # Más bins para que se vea más detallado
-                title="¿Cómo se distribuyen las notas de los alumnos?",
-                labels={'Pct_Puntaje': 'Nota del Exit Ticket (%)', 'count': 'Número de Estudiantes'},
-                color_discrete_sequence=['#636EFA'], 
-                text_auto=True 
-            )
-            
-            fig_dist_puntaje.update_layout(
-                bargap=0.05, 
-                xaxis_range=[0, 105], # Ahora sí el 100 tendrá sentido
-                plot_bgcolor='rgba(0,0,0,0)'
-            )
-            
-            st.plotly_chart(fig_dist_puntaje, use_container_width=True)
-            st.markdown("---")
-
+        fig_puntaje = px.line(
+            df_notas, # Ahora df_notas ya existe
+            x='Date', 
+            y='Pct_Puntaje', 
+            color='Grado',
+            title='Promedio de Respuestas Correctas',
+            markers=True,
+            labels={'Pct_Puntaje': 'Puntaje (%)'}
+        )
+        
+        fig_puntaje.update_traces(connectgaps=True)
+        st.plotly_chart(fig_puntaje, use_container_width=True)
+        st.markdown("---")
+        
             # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
         st.subheader("📊 Distribución Total: Niveles de Aprendizaje y No Evaluados")
         
