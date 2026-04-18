@@ -43,7 +43,7 @@ def load_data():
             'q3_curso': 'Curso',
             'asistencia': 'Asistencia_Absoluta',
             'duration_h': 'Horas',
-            'n_alumnos': 'n_alumnos',
+            'n_alumnos': 'Alumnos',
             'pct_asistencia': 'Pct_Asistencia',
             'pct_logro': 'Pct_Logro',
             'pct_inicio': 'Pct_Inicio',
@@ -149,7 +149,7 @@ if df_raw is not None:
             with st.expander("📂 Ver detalle de datos filtrados (Raw Data)"):
                 cols_mostrar = [
                 'Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 
-                'Asistencia_Absoluta', 'n_alumnos', 'Pct_Asistencia', 
+                'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia', 
                 'una_vez_asistencia', 'Pct_Una_Asistencia', 
                 'nunca_asistencia', 'Pct_Nunca_Asistencia'
                 ]
