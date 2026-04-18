@@ -174,23 +174,20 @@ if df_raw is not None:
             df_notas = df_notas.sort_values('Date')
         
             # --- 1. CÁLCULOS DE MÉTRICAS ACTUALIZADOS ---
+ # --- 1. CÁLCULOS DE MÉTRICAS ACTUALIZADOS ---
             
-            # Métrica 1: Número de Exit Tickets Aplicados (Cantidad Real)
-            # Contamos cuántas filas tienen un puntaje registrado
-            numero_aplicados = int(df_filtered['Pct_Puntaje'].notna().sum())
+            # Métrica 1: Días con Exit Tickets Aplicados
+            # Filtramos las filas que tienen puntaje y contamos cuántas fechas únicas existen
+            dias_con_datos = df_filtered[df_filtered['Pct_Puntaje'].notna()]
+            numero_aplicados = dias_con_datos['Date'].nunique()
             
-            # Métrica 2: Puntaje Promedio (CORRECCIÓN DE ESCALA)
-            promedio_puntaje_raw = df_filtered['Pct_Puntaje'].mean()
-            # Si el promedio es muy bajo (menor o igual a 1), multiplicamos por 100
-            if promedio_puntaje_raw <= 1.0:
-                promedio_puntaje_real = promedio_puntaje_raw * 100
-            else:
-                promedio_puntaje_real = promedio_puntaje_raw
+            # Métrica 2: Puntaje Promedio (Escala corregida)
+            prom_puntaje_raw = df_filtered['Pct_Puntaje'].mean()
+            promedio_puntaje_real = prom_puntaje_raw * 100 if prom_puntaje_raw <= 1.0 else prom_puntaje_raw
             
-            # Métrica 3: % de Estudiantes en Logro (Ponderado)
+            # Métrica 3: % de Estudiantes en Logro (Ponderado sobre el total de alumnos)
             total_estudiantes_evaluados = df_filtered[['Logro', 'Proceso', 'Inicio']].sum().sum()
             total_estudiantes_logro = df_filtered['Logro'].sum()
-            
             promedio_logro_real = (total_estudiantes_logro / total_estudiantes_evaluados * 100) if total_estudiantes_evaluados > 0 else 0
 
             # --- 2. VISUALIZACIÓN EN COLUMNAS ---
@@ -198,23 +195,24 @@ if df_raw is not None:
             
             m1.metric(
                 label="Exit Tickets Aplicados", 
-                value=f"{numero_aplicados} und.", # Ahora muestra el número entero
-                help="Cantidad total de sesiones donde se registró la evaluación."
+                value=f"{numero_aplicados} sesiones", # Ahora refleja días/sesiones únicas
+                help="Número de fechas distintas en las que se registró al menos una evaluación."
             )
             
             m2.metric(
                 label="Puntaje Promedio", 
-                value=f"{promedio_puntaje_real:.1f}%", # Ahora debería marcar ~60% o similar
-                help="Promedio porcentual de respuestas correctas."
+                value=f"{promedio_puntaje_real:.1f}%",
+                help="Promedio de respuestas correctas."
             )
             
             m3.metric(
                 label="Estudiantes en Logro", 
                 value=f"{promedio_logro_real:.1f}%",
-                help="Porcentaje total de alumnos en nivel de Logro sobre el universo evaluado."
+                help="Porcentaje total de alumnos en nivel de Logro."
             )
 
-            st.markdown("---")
+            st.markdown("---")           
+
 
 # --- 3. SECCIÓN: LOGRO (Línea de tiempo) ---
         st.subheader("🌟 Puntaje del Exit Ticket (%)")
