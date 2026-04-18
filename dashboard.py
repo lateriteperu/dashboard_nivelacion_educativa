@@ -107,7 +107,7 @@ if df_raw is not None:
     tab1, tab2 = st.tabs(["📋 Asistencia", "📝 Rendimiento Académico"])
 
     with tab1:
-        st.header("Resumen de Asistencia")
+        st.header("📅 Resumen de Asistencia")
         m1, m2, m3, m4 = st.columns(4)
         
         if not df_filtered.empty:
