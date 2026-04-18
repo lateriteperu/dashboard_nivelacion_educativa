@@ -202,33 +202,41 @@ if df_raw is not None:
             st.markdown("---")
 
             # --- 4. SECCIÓN: PUNTAJE (Línea de tiempo) ---
-            st.subheader("📊 Distribución de Frecuencia de Puntajes")
+        st.subheader("📊 Distribución de Frecuencia de Puntajes")
         
         if not df_filtered.empty:
-            # Creamos el histograma del Pct_Puntaje
+            # 1. Creamos una copia temporal para no alterar otros gráficos
+            df_hist = df_filtered.copy()
+            
+            # 2. Convertimos a número y si el máximo es <= 1, multiplicamos por 100
+            df_hist['Pct_Puntaje'] = pd.to_numeric(df_hist['Pct_Puntaje'], errors='coerce')
+            
+            # Forzamos la multiplicación si detectamos que son decimales
+            if df_hist['Pct_Puntaje'].mean() <= 1.0:
+                df_hist['Pct_Puntaje'] = df_hist['Pct_Puntaje'] * 100
+
+            # 3. Quitamos los nulos (estudiantes que no dieron examen) para que no ensucien el gráfico
+            df_hist = df_hist.dropna(subset=['Pct_Puntaje'])
+
+            # 4. Creamos el histograma
             fig_dist_puntaje = px.histogram(
-                df_filtered, 
+                df_hist, 
                 x="Pct_Puntaje",
-                nbins=10, # Divide el rango en 10 bloques (0-10%, 10-20%...)
-                title="Frecuencia de Puntajes Obtenidos",
-                labels={'Pct_Puntaje': 'Rango de Puntaje (%)', 'count': 'Frecuencia (Cantidad)'},
-                color_discrete_sequence=['#636EFA'], # Un azul profesional
-                text_auto=True # Muestra la cantidad encima de cada barra
+                nbins=20, # Más bins para que se vea más detallado
+                title="¿Cómo se distribuyen las notas de los alumnos?",
+                labels={'Pct_Puntaje': 'Nota del Exit Ticket (%)', 'count': 'Número de Estudiantes'},
+                color_discrete_sequence=['#636EFA'], 
+                text_auto=True 
             )
             
             fig_dist_puntaje.update_layout(
-                bargap=0.1, 
-                plot_bgcolor='rgba(0,0,0,0)',
-                xaxis_range=[0, 105]
+                bargap=0.05, 
+                xaxis_range=[0, 105], # Ahora sí el 100 tendrá sentido
+                plot_bgcolor='rgba(0,0,0,0)'
             )
             
             st.plotly_chart(fig_dist_puntaje, use_container_width=True)
-            
-            st.info("""
-                💡 **¿Qué nos dice este gráfico?** Permite ver la "forma" de tus notas. 
-                - Si hay muchas barras a la **derecha**, la evaluación fue exitosa. 
-                - Si hay muchas a la **izquierda**, la evaluación fue muy difícil o hubo bajo desempeño.
-            """)
+            st.markdown("---")
 
             # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
         st.subheader("📊 Distribución Total: Niveles de Aprendizaje y No Evaluados")
