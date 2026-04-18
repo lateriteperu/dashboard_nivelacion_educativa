@@ -43,7 +43,7 @@ def load_data():
             'q3_curso': 'Curso',
             'asistencia': 'Asistencia_Absoluta',
             'duration_h': 'Horas',
-            'n_alumnos': 'Alumnos',
+            'n_alumnos': 'n_alumnos',
             'pct_asistencia': 'Pct_Asistencia',
             'pct_logro': 'Pct_Logro',
             'pct_inicio': 'Pct_Inicio',
@@ -147,7 +147,12 @@ if df_raw is not None:
 
             st.markdown("---")
             with st.expander("📂 Ver detalle de datos filtrados (Raw Data)"):
-                cols_mostrar = ['Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia', 'Horas', 'una_vez_asistencia', 'Pct_Una_Asistencia', 'nunca_asistencia', 'Pct_Nunca_Asistencia']
+                cols_mostrar = [
+                'Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 
+                'Asistencia_Absoluta', 'n_alumnos', 'Pct_Asistencia', 
+                'una_vez_asistencia', 'Pct_Una_Asistencia', 
+                'nunca_asistencia', 'Pct_Nunca_Asistencia'
+                ]
                 cols_reales = [c for c in cols_mostrar if c in df_filtered.columns]
                 df_tabla = df_filtered[cols_reales].copy()
                 df_tabla['Date'] = df_tabla['Date'].dt.strftime('%d-%m-%Y')
