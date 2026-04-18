@@ -130,6 +130,9 @@ if df_raw is not None:
             fig_asist = px.bar(df_asistencia_diaria, x='Date', y='Pct_Asistencia', color='Grado', barmode='group', text_auto='.1f')
             fig_asist.update_yaxes(range=[0, 100])
             st.plotly_chart(fig_asist, use_container_width=True)
+            st.info("""
+                💡 **¿Cómo interpretar este gráfico?** Cada barra representa el porcentaje de estudiantes respecto del total registrado que asistieron a las clases.
+            """)
 
             st.markdown("---")
             st.subheader("📈 Análisis de Tendencia (Media móvil de 3 sesiones)")
@@ -138,6 +141,9 @@ if df_raw is not None:
             fig_media_movil = px.line(df_tendencia, x='Date', y='Media_Movil', line_shape='spline')
             fig_media_movil.add_scatter(x=df_tendencia['Date'], y=df_tendencia['Pct_Asistencia'], mode='markers', name='Dato Diario')
             st.plotly_chart(fig_media_movil, use_container_width=True)
+            st.info("""
+                💡 **¿Cómo interpretar este gráfico?** Cada punto representa un porcentaje promedio de asistencia de las últimas 3 sesiones.
+            """)
 
             st.markdown("---")
             # --- TABLA DE DATOS (RAW DATA) AL ESTILO LATERITE ---
@@ -194,21 +200,21 @@ if df_raw is not None:
             m1, m2, m3 = st.columns(3)
             
             m1.metric(
-                label="Exit Tickets Aplicados", 
-                value=f"{numero_aplicados} sesiones", # Ahora refleja días/sesiones únicas
+                label="Número de Exit Tickets Aplicados", 
+                value=f"{numero_aplicados}", # Ahora refleja días/sesiones únicas
                 help="Número de fechas distintas en las que se registró al menos una evaluación."
             )
             
             m2.metric(
-                label="Puntaje Promedio", 
+                label="Porcentaje del Exit Ticket respondido corrrectamente", 
                 value=f"{promedio_puntaje_real:.1f}%",
-                help="Promedio de respuestas correctas."
+                help="Promedio de respuestas correctas del exit ticket en porcentaje. El exit ticket tiene usualmente entre 4 y 5 preguntas."
             )
             
             m3.metric(
-                label="Estudiantes en Logro", 
+                label="Porcentaje de Estudiantes en Nivel Logro", 
                 value=f"{promedio_logro_real:.1f}%",
-                help="Porcentaje total de alumnos en nivel de Logro."
+                help="Porcentaje total de alumnos que resolvieron correctamente el 80% o más del exit ticket (nivel logro)."
             )
 
             st.markdown("---")           
@@ -222,13 +228,16 @@ if df_raw is not None:
             x='Date', 
             y='Pct_Puntaje', 
             color='Grado',
-            title='Promedio de Respuestas Correctas',
+            title='Porcentaje Respuestas Correctas',
             markers=True,
             labels={'Pct_Puntaje': 'Puntaje (%)'}
         )
         
         fig_puntaje.update_traces(connectgaps=True)
         st.plotly_chart(fig_puntaje, use_container_width=True)
+        st.info("""
+                💡 **¿Cómo interpretar este gráfico?** Cada punto representa el porcentaje de respuestas 
+            """)
         st.markdown("---")
         
             # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
@@ -285,6 +294,7 @@ if df_raw is not None:
                 )
                 
                 st.plotly_chart(fig_niveles, use_container_width=True)
-                
+                st.info("""
+                💡 **¿Cómo interpretar este gráfico?** Cada barra representa el total de estudiantes registrados. Los estudiantes del grupo con nivel logro completaron correctamente el 80% o más del exit ticket de la clase. Los estudiantes del grupo con nivel en proceso respondieron correctamente entre el 50% y 79% del exit ticket. Los estudiantes en el grupo con nivel inicio, respondieron correctamente menos del 50% del exit ticket""")    
             except Exception as e:
                 st.error(f"Error al generar el gráfico de barras: {e}")
