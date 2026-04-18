@@ -202,20 +202,33 @@ if df_raw is not None:
             st.markdown("---")
 
             # --- 4. SECCIÓN: PUNTAJE (Línea de tiempo) ---
-            st.subheader("🌟 Puntaje del Exit Ticket (%)")
-            fig_puntaje = px.line(
-                df_notas, # Ahora df_notas ya existe
-                x='Date', 
-                y='Pct_Puntaje', 
-                color='Grado',
-                title='Promedio de Respuestas Correctas',
-                markers=True,
-                labels={'Pct_Puntaje': 'Puntaje (%)'}
+            st.subheader("📊 Distribución de Frecuencia de Puntajes")
+        
+        if not df_filtered.empty:
+            # Creamos el histograma del Pct_Puntaje
+            fig_dist_puntaje = px.histogram(
+                df_filtered, 
+                x="Pct_Puntaje",
+                nbins=10, # Divide el rango en 10 bloques (0-10%, 10-20%...)
+                title="Frecuencia de Puntajes Obtenidos",
+                labels={'Pct_Puntaje': 'Rango de Puntaje (%)', 'count': 'Frecuencia (Cantidad)'},
+                color_discrete_sequence=['#636EFA'], # Un azul profesional
+                text_auto=True # Muestra la cantidad encima de cada barra
             )
-            fig_puntaje.update_traces(connectgaps=True)
-            st.plotly_chart(fig_puntaje, use_container_width=True)
-
-            st.markdown("---")
+            
+            fig_dist_puntaje.update_layout(
+                bargap=0.1, 
+                plot_bgcolor='rgba(0,0,0,0)',
+                xaxis_range=[0, 105]
+            )
+            
+            st.plotly_chart(fig_dist_puntaje, use_container_width=True)
+            
+            st.info("""
+                💡 **¿Qué nos dice este gráfico?** Permite ver la "forma" de tus notas. 
+                - Si hay muchas barras a la **derecha**, la evaluación fue exitosa. 
+                - Si hay muchas a la **izquierda**, la evaluación fue muy difícil o hubo bajo desempeño.
+            """)
 
             # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
         st.subheader("📊 Distribución Total: Niveles de Aprendizaje y No Evaluados")
