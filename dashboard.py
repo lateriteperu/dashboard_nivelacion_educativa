@@ -146,18 +146,33 @@ if df_raw is not None:
                 st.plotly_chart(fig_una, use_container_width=True)
 
             st.markdown("---")
-            with st.expander("📂 Ver detalle de datos filtrados (Raw Data)"):
-                cols_mostrar = [
+            # --- TABLA DE DATOS (RAW DATA) AL ESTILO LATERITE ---
+        st.markdown("---")
+        with st.expander("📂 View filtered raw data"):
+            # 1. Definimos las columnas que queremos mostrar (basado en tus nombres actuales)
+            cols_mostrar = [
                 'Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 
-                'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia', 
+                'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia', 'Horas', 
                 'una_vez_asistencia', 'Pct_Una_Asistencia', 
                 'nunca_asistencia', 'Pct_Nunca_Asistencia'
-                ]
-                cols_reales = [c for c in cols_mostrar if c in df_filtered.columns]
-                df_tabla = df_filtered[cols_reales].copy()
-                df_tabla['Date'] = df_tabla['Date'].dt.strftime('%d-%m-%Y')
-                st.dataframe(df_tabla.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
-
+            ]
+            
+            # 2. Creamos una copia del dataframe filtrado con esas columnas
+            # (Usamos cols_reales para que no de error si alguna columna falta)
+            cols_reales = [c for c in cols_mostrar if c in df_filtered.columns]
+            df_tabla = df_filtered[cols_reales].copy()
+            
+            # 3. Formateamos la fecha para que sea idéntica al CSV original
+            df_tabla['Date'] = df_tabla['Date'].dt.strftime('%d-%m-%Y')
+            
+            # 4. Mostramos la tabla interactiva
+            st.dataframe(
+                df_tabla.sort_values('Date', ascending=False), 
+                use_container_width=True,
+                hide_index=True
+            )
+            st.caption("Esta tabla muestra los registros exactos que están alimentando los gráficos superiores.")
+            
     # --- TAB 2: NOTAS ---
 with tab2:
         st.header("🎯 Rendimiento Académico (Exit Tickets)")
