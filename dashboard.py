@@ -47,6 +47,7 @@ def load_data():
             'pct_asistencia': 'Pct_Asistencia',
             'pct_logro': 'Pct_Logro',
             'pct_inicio': 'Pct_Inicio',
+            'pct_proceso': 'Pct_Proceso',
             'pct_puntaje': 'Pct_Puntaje',
             'una_vez_asistencia': 'una_vez_asistencia',
             'pct_una_asistencia': 'Pct_Una_Asistencia',
@@ -135,16 +136,6 @@ if df_raw is not None:
             fig_media_movil.add_scatter(x=df_tendencia['Date'], y=df_tendencia['Pct_Asistencia'], mode='markers', name='Dato Diario')
             st.plotly_chart(fig_media_movil, use_container_width=True)
 
-            st.subheader("🚩 Análisis de Permanencia y Deserción")
-            col_fid1, col_fid2 = st.columns(2)
-            df_fid_diaria = df_filtered.groupby('Date')[['Pct_Nunca_Asistencia', 'Pct_Una_Asistencia']].mean().reset_index()
-            with col_fid1:
-                fig_nunca = px.bar(df_fid_diaria, x='Date', y='Pct_Nunca_Asistencia', title="% Estudiantes que NUNCA asistieron", color_discrete_sequence=['#ef553b'], text_auto='.1f')
-                st.plotly_chart(fig_nunca, use_container_width=True)
-            with col_fid2:
-                fig_una = px.bar(df_fid_diaria, x='Date', y='Pct_Una_Asistencia', title="% Estudiantes con RIESGO de Abandono", color_discrete_sequence=['#fecb52'], text_auto='.1f')
-                st.plotly_chart(fig_una, use_container_width=True)
-
             st.markdown("---")
             # --- TABLA DE DATOS (RAW DATA) AL ESTILO LATERITE ---
         st.markdown("---")
@@ -153,8 +144,6 @@ if df_raw is not None:
             cols_mostrar = [
                 'Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 
                 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia', 'Horas', 
-                'una_vez_asistencia', 'Pct_Una_Asistencia', 
-                'nunca_asistencia', 'Pct_Nunca_Asistencia'
             ]
             
             # 2. Creamos una copia del dataframe filtrado con esas columnas
@@ -194,6 +183,27 @@ with tab2:
         m2.metric("Nivel Logro - Alcanzado (% Estudiantes)", f"{promedio_logro:.1f}%")
         m3.metric("Nivel Logro - No Alcanzado (% Estudiantes)", f"{promedio_no_logro:.1f}%", delta_color="inverse")
 
+        
+        st.markdown("---") # Separador visual
+
+        # --- SECCIÓN 2: PUNTAJE (ABAJO) ---
+        st.subheader("🌟Puntaje del Exit Ticket (%)")
+        fig_puntaje = px.line(
+            df_notas, 
+            x='Date', 
+            y='Pct_Puntaje', 
+            color='Grado',
+            title='Promedio de Respuestas Correctas',
+            markers=True,
+            labels={'Pct_Puntaje': 'Puntaje (%)'}
+        )
+        fig_puntaje.update_traces(connectgaps=True)
+        st.plotly_chart(fig_puntaje, use_container_width=True)
+
+        st.info("""
+            💡 **¿Cómo leer este gráfico?** Los **puntos** representan el porcentaje promedio del exit ticket completado correctamente. Para alcanzar el nivel de logro por sesión, el salón debería responder, en promedio, el 80% o más de la evaluación correctamente.
+        """)
+
         st.markdown("---") # Separador visual
         
         # 1. Preparación de datos (Igual que antes)
@@ -221,21 +231,47 @@ with tab2:
 
         # Una línea divisoria para separar los dos análisis
         st.markdown("---")
-
-        # --- SECCIÓN 2: PUNTAJE (ABAJO) ---
-        st.subheader("🌟Puntaje del Exit Ticket (%)")
-        fig_puntaje = px.line(
-            df_notas, 
-            x='Date', 
-            y='Pct_Puntaje', 
-            color='Grado',
-            title='Promedio de Respuestas Correctas',
-            markers=True,
-            labels={'Pct_Puntaje': 'Puntaje (%)'}
-        )
-        fig_puntaje.update_traces(connectgaps=True)
-        st.plotly_chart(fig_puntaje, use_container_width=True)
-
-        st.info("""
-            💡 **¿Cómo leer este gráfico?** Los **puntos** representan el porcentaje promedio del exit ticket completado correctamente. Para alcanzar el nivel de logro por sesión, el salón debería responder, en promedio, el 80% o más de la evaluación correctamente.
-        """)
+        # --- TAB 2: DISTRIBUCIÓN DE NIVELES DE APRENDIZAJE 
+        st.header("🎯 Distribución de Niveles de Aprendizaje")
+        
+        if not df_filtered.empty:
+            # 1. Agrupamos por día y calculamos el promedio de los 3 niveles
+            df_niveles = df_filtered.groupby('Date')[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].mean().reset_index()
+            
+            # 2. Transformamos los datos para que Plotly los entienda (formato largo)
+            df_melted = df_niveles.melt(
+                id_vars='Date', 
+                value_vars=['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio'],
+                var_name='Nivel de Aprendizaje', 
+                value_name='Porcentaje'
+            )
+            
+            # 3. Creamos el gráfico de barras apiladas (Stacked Bar Chart)
+            fig_niveles = px.bar(
+                df_melted, 
+                x='Date', 
+                y='Porcentaje', 
+                color='Nivel de Aprendizaje',
+                title="Evolución Diaria: Logro vs. Proceso vs. Inicio",
+                barmode='stack', # Apiladas para que sumen el 100% de la clase
+                color_discrete_map={
+                    'Pct_Logro': '#00CC96',   # Verde
+                    'Pct_Proceso': '#FECB52', # Amarillo/Naranja
+                    'Pct_Inicio': '#EF553B'   # Rojo
+                },
+                text_auto='.1f'
+            )
+            
+            fig_niveles.update_layout(xaxis_tickformat='%d %b')
+            fig_niveles.update_yaxes(range=[0, 105], title="Porcentaje de Estudiantes (%)")
+            
+            st.plotly_chart(fig_niveles, use_container_width=True)
+            
+            st.info("""
+                💡 **¿Cómo leer este gráfico?** Cada barra representa el 100% de los estudiantes evaluados ese día. 
+                - **Verde (Logro):** Superaron la meta del 80%.
+                - **Amarillo (Proceso):** Están cerca pero les falta consolidar.
+                - **Rojo (Inicio):** Necesitan intervención inmediata.
+            """)
+        else:
+            st.warning("No hay datos para mostrar en este rango.")
