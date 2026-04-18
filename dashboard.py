@@ -218,12 +218,14 @@ if df_raw is not None:
             st.markdown("---")
 
             # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
+        # --- SECCIÓN 3: DISTRIBUCIÓN DE NIVELES (SIN CEROS FALSOS) ---
         st.subheader("📊 Distribución de Niveles de Aprendizaje")
         
         if not df_filtered.empty:
-            # 1. Agrupamos y preparamos datos
+            # Agrupamos: Pandas por defecto ignora los NaN en el promedio (.mean)
             df_niveles = df_filtered.groupby('Date')[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].mean().reset_index()
             
+            # Convertimos a formato largo para Plotly
             df_melted = df_niveles.melt(
                 id_vars='Date', 
                 value_vars=['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio'],
@@ -231,41 +233,23 @@ if df_raw is not None:
                 value_name='Porcentaje'
             )
 
-            # Limpiamos los nombres para la leyenda (quitamos el 'Pct_')
+            # ELIMINAMOS las filas donde el Porcentaje es NaN para que Plotly no de TypeError
+            df_melted = df_melted.dropna(subset=['Porcentaje'])
+            
             df_melted['Nivel'] = df_melted['Nivel'].str.replace('Pct_', '')
             
-            # 2. Creamos el gráfico con normalización al 100%
+            # Crear el gráfico
             fig_niveles = px.bar(
                 df_melted, 
                 x='Date', 
                 y='Porcentaje', 
                 color='Nivel',
                 barmode='stack',
-                barnorm='percent', # <--- ESTO HACE QUE TODAS MIDAN IGUAL
-                title="Composición del Salón por Nivel de Logro",
-                color_discrete_map={
-                    'Logro': '#00CC96',   # Verde esmeralda
-                    'Proceso': '#FECB52', # Amarillo vibrante
-                    'Inicio': '#EF553B'   # Rojo coral
-                },
+                barnorm='percent', 
+                title="Composición del Salón (Solo Estudiantes Evaluados)",
+                color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'},
                 text_auto='.1f'
             )
             
-            # 3. Ajustes estéticos de diseño
-            fig_niveles.update_traces(
-                textposition='inside', 
-                insidetextanchor='middle',
-                marker_line_width=1, 
-                marker_line_color="white"
-            )
-            
-            fig_niveles.update_layout(
-                xaxis_title="Fecha de Sesión",
-                yaxis_title="% de Estudiantes",
-                legend_title="Niveles",
-                xaxis_tickformat='%d %b',
-                plot_bgcolor='rgba(0,0,0,0)', # Fondo transparente
-                bargap=0.3 # Espacio elegante entre barras
-            )
-            
+            fig_niveles.update_layout(xaxis_tickformat='%d %b', bargap=0.3)
             st.plotly_chart(fig_niveles, use_container_width=True)
