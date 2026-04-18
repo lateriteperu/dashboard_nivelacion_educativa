@@ -202,17 +202,17 @@ if df_raw is not None:
             m1.metric(
                 label="Número de Exit Tickets Aplicados", 
                 value=f"{numero_aplicados}", # Ahora refleja días/sesiones únicas
-                help="Número de fechas distintas en las que se registró al menos una evaluación."
+                help="Cada sesión es cerrada con una evaluación de salida (exit ticket)."
             )
             
             m2.metric(
-                label="Porcentaje del Exit Ticket respondido corrrectamente", 
+                label="Respuestas correctas (% Exit Ticket)", 
                 value=f"{promedio_puntaje_real:.1f}%",
-                help="Promedio de respuestas correctas del exit ticket en porcentaje. El exit ticket tiene usualmente entre 4 y 5 preguntas."
+                help="Porcentaje del exit ticket respondido correctamente. El exit ticket tiene usualmente entre 4 y 5 preguntas."
             )
             
             m3.metric(
-                label="Porcentaje de Estudiantes en Nivel Logro", 
+                label="Estudiantes con Nivel Logro", 
                 value=f"{promedio_logro_real:.1f}%",
                 help="Porcentaje total de alumnos que resolvieron correctamente el 80% o más del exit ticket (nivel logro)."
             )
@@ -221,7 +221,7 @@ if df_raw is not None:
 
 
 # --- 3. SECCIÓN: LOGRO (Línea de tiempo) ---
-        st.subheader("🌟 Puntaje del Exit Ticket (%)")
+        st.subheader("🌟 Respuestas Correctas en el Exit Ticket (% total de preguntas)")
         
         fig_puntaje = px.line(
             df_notas, # Ahora df_notas ya existe
@@ -236,12 +236,12 @@ if df_raw is not None:
         fig_puntaje.update_traces(connectgaps=True)
         st.plotly_chart(fig_puntaje, use_container_width=True)
         st.info("""
-                💡 **¿Cómo interpretar este gráfico?** Cada punto representa el porcentaje de respuestas 
+                💡 **¿Cómo interpretar este gráfico?** Cada punto representa el porcentaje promedio de preguntas respondidas correctamente del exit ticket.
             """)
         st.markdown("---")
         
             # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
-        st.subheader("📊 Distribución Total: Niveles de Aprendizaje y No Evaluados")
+        st.subheader("📊 Distribución de Niveles de Aprendizaje ")
         
         if not df_filtered.empty:
             # 1. Agrupamos y promediamos
@@ -294,7 +294,10 @@ if df_raw is not None:
                 )
                 
                 st.plotly_chart(fig_niveles, use_container_width=True)
-                st.info("""
-                💡 **¿Cómo interpretar este gráfico?** Cada barra representa el total de estudiantes registrados. Los estudiantes del grupo con nivel logro completaron correctamente el 80% o más del exit ticket de la clase. Los estudiantes del grupo con nivel en proceso respondieron correctamente entre el 50% y 79% del exit ticket. Los estudiantes en el grupo con nivel inicio, respondieron correctamente menos del 50% del exit ticket""")    
+                st.info("""💡 **Guía de Interpretación:** Cada columna representa el universo total de estudiantes registrados. Los niveles se definen según el desempeño en el *Exit Ticket*:
+                ***Logro:** Estudiantes con 80% o más de respuestas correctas.
+                ***En Proceso:** Estudiantes con un desempeño entre el 50% y 79%.
+                ***Inicio:** Estudiantes con un desempeño inferior al 50%.
+                """)
             except Exception as e:
                 st.error(f"Error al generar el gráfico de barras: {e}")
