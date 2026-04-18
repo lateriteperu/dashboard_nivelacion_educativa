@@ -218,32 +218,54 @@ if df_raw is not None:
             st.markdown("---")
 
             # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
-            st.subheader("📊 Distribución de Niveles de Aprendizaje")
-            
+        st.subheader("📊 Distribución de Niveles de Aprendizaje")
+        
+        if not df_filtered.empty:
+            # 1. Agrupamos y preparamos datos
             df_niveles = df_filtered.groupby('Date')[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].mean().reset_index()
             
             df_melted = df_niveles.melt(
                 id_vars='Date', 
                 value_vars=['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio'],
-                var_name='Nivel de Aprendizaje', 
+                var_name='Nivel', 
                 value_name='Porcentaje'
             )
+
+            # Limpiamos los nombres para la leyenda (quitamos el 'Pct_')
+            df_melted['Nivel'] = df_melted['Nivel'].str.replace('Pct_', '')
             
+            # 2. Creamos el gráfico con normalización al 100%
             fig_niveles = px.bar(
                 df_melted, 
                 x='Date', 
                 y='Porcentaje', 
-                color='Nivel de Aprendizaje',
+                color='Nivel',
                 barmode='stack',
+                barnorm='percent', # <--- ESTO HACE QUE TODAS MIDAN IGUAL
+                title="Composición del Salón por Nivel de Logro",
                 color_discrete_map={
-                    'Pct_Logro': '#00CC96',   # Verde
-                    'Pct_Proceso': '#FECB52', # Amarillo
-                    'Pct_Inicio': '#EF553B'   # Rojo
+                    'Logro': '#00CC96',   # Verde esmeralda
+                    'Proceso': '#FECB52', # Amarillo vibrante
+                    'Inicio': '#EF553B'   # Rojo coral
                 },
                 text_auto='.1f'
             )
-            fig_niveles.update_layout(xaxis_tickformat='%d %b')
+            
+            # 3. Ajustes estéticos de diseño
+            fig_niveles.update_traces(
+                textposition='inside', 
+                insidetextanchor='middle',
+                marker_line_width=1, 
+                marker_line_color="white"
+            )
+            
+            fig_niveles.update_layout(
+                xaxis_title="Fecha de Sesión",
+                yaxis_title="% de Estudiantes",
+                legend_title="Niveles",
+                xaxis_tickformat='%d %b',
+                plot_bgcolor='rgba(0,0,0,0)', # Fondo transparente
+                bargap=0.3 # Espacio elegante entre barras
+            )
+            
             st.plotly_chart(fig_niveles, use_container_width=True)
-
-        else:
-            st.warning("No hay datos disponibles para los filtros seleccionados.")
