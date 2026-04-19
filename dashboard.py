@@ -51,7 +51,7 @@ def load_data():
             'pct_logro': 'Pct_Logro',
             'pct_inicio': 'Pct_Inicio',
             'pct_proceso': 'Pct_Proceso',
-            'pct_puntaje': 'Pct_Puntaje',
+            'pct_puntaje': 'Pct_Puntaje'
             #'una_vez_asistencia': 'una_vez_asistencia',
             #'pct_una_asistencia': 'Pct_Una_Asistencia',
             #'nunca_asistencia': 'nunca_asistencia',
