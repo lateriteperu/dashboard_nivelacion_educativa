@@ -237,19 +237,12 @@ if df_raw is not None:
             labels={'Pct_Puntaje': 'Puntaje (%)'}
         )
         
-        fig_puntaje.update_layout(
-        yaxis=dict(
-            range=[0, 105],
-            ticksuffix="%" # Agrega el símbolo % al eje Y
-        )
-    )
-    
         fig_puntaje.update_traces(connectgaps=True)
         st.plotly_chart(fig_puntaje, use_container_width=True)
-    
         st.info("""
-        💡 **¿Cómo interpretar este gráfico?** Cada punto representa el porcentaje promedio de preguntas respondidas correctamente del exit ticket.
-    """)
+                💡 **¿Cómo interpretar este gráfico?** Cada punto representa el porcentaje promedio de preguntas respondidas correctamente del exit ticket.
+            """)
+        st.markdown("---")
         
         # --- GRÁFICO DE BARRAS POR NIVEL DE LOGRO OBTENIDO EN EXIT TICKET   ---
         st.subheader("📊 Distribución de Niveles de Aprendizaje ")
