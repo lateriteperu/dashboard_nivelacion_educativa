@@ -226,11 +226,7 @@ if df_raw is not None:
 
         # --- GRÁFICO DE PORCENTAJE PROMEDIO DE RESPUESTAS CORRECTAS EN EL EXIT TICKET  ---
         st.subheader("🌟 Respuestas Correctas en el Exit Ticket ")
-        if not df_notas.empty:
-           df_plot_notas = df_notas.copy()
-
-        if df_plot_notas['Pct_Puntaje'].max() <= 1.0:
-           df_plot_notas['Pct_Puntaje'] = df_plot_notas['Pct_Puntaje'] * 100
+        
         fig_puntaje = px.line(
             df_notas, # Ahora df_notas ya existe
             x='Date', 
@@ -238,8 +234,7 @@ if df_raw is not None:
             color='Grado',
             title='Porcentaje de Respuestas Correctas en el Exit Ticket (% total de preguntas)',
             markers=True,
-            labels={'Pct_Puntaje': 'Puntaje (%)'},
-            hover_data={'Pct_Puntaje': ':.1f'}
+            labels={'Pct_Puntaje': 'Puntaje (%)'}
         )
         
         fig_puntaje.update_layout(
