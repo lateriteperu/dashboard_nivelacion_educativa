@@ -133,6 +133,7 @@ if df_raw is not None:
             df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado'])['Pct_Asistencia'].mean().reset_index()
             fig_asist = px.bar(df_asistencia_diaria, x='Date', y='Pct_Asistencia', color='Grado', barmode='group', text_auto='.1f')
             fig_asist.update_yaxes(range=[0, 100])
+            labels={'Pct_Asistencia': 'Asistencia (%)', 'Date': 'Fecha' }
             st.plotly_chart(fig_asist, use_container_width=True)
             st.info("""
                 💡 **¿Cómo interpretar este gráfico?** Cada barra representa el porcentaje de estudiantes respecto del total registrado que asistieron a las clases.
@@ -225,7 +226,11 @@ if df_raw is not None:
 
         # --- GRÁFICO DE PORCENTAJE PROMEDIO DE RESPUESTAS CORRECTAS EN EL EXIT TICKET  ---
         st.subheader("🌟 Respuestas Correctas en el Exit Ticket ")
-        
+        if not df_notas.empty:
+           df_plot_notas = df_notas.copy()
+
+        if df_plot_notas['Pct_Puntaje'].max() <= 1.0:
+           df_plot_notas['Pct_Puntaje'] = df_plot_notas['Pct_Puntaje'] * 100
         fig_puntaje = px.line(
             df_notas, # Ahora df_notas ya existe
             x='Date', 
@@ -233,15 +238,23 @@ if df_raw is not None:
             color='Grado',
             title='Porcentaje de Respuestas Correctas en el Exit Ticket (% total de preguntas)',
             markers=True,
-            labels={'Pct_Puntaje': 'Puntaje (%)'}
+            labels={'Pct_Puntaje': 'Puntaje (%)'},
+            hover_data={'Pct_Puntaje': ':.1f'}
         )
         
+        fig_puntaje.update_layout(
+        yaxis=dict(
+            range=[0, 105],
+            ticksuffix="%" # Agrega el símbolo % al eje Y
+        )
+    )
+    
         fig_puntaje.update_traces(connectgaps=True)
         st.plotly_chart(fig_puntaje, use_container_width=True)
+    
         st.info("""
-                💡 **¿Cómo interpretar este gráfico?** Cada punto representa el porcentaje promedio de preguntas respondidas correctamente del exit ticket.
-            """)
-        st.markdown("---")
+        💡 **¿Cómo interpretar este gráfico?** Cada punto representa el porcentaje promedio de preguntas respondidas correctamente del exit ticket.
+    """)
         
         # --- GRÁFICO DE BARRAS POR NIVEL DE LOGRO OBTENIDO EN EXIT TICKET   ---
         st.subheader("📊 Distribución de Niveles de Aprendizaje ")
