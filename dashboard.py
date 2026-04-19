@@ -52,19 +52,19 @@ def load_data():
             'pct_inicio': 'Pct_Inicio',
             'pct_proceso': 'Pct_Proceso',
             'pct_puntaje': 'Pct_Puntaje',
-            'una_vez_asistencia': 'una_vez_asistencia',
-            'pct_una_asistencia': 'Pct_Una_Asistencia',
-            'nunca_asistencia': 'nunca_asistencia',
-            'pct_nunca_asistencia': 'Pct_Nunca_Asistencia',
-            'pct_alto_rendimiento': 'Pct_Alto_Rendimiento',
-            'pct_riesgo': 'Pct_Riesgo'
+            #'una_vez_asistencia': 'una_vez_asistencia',
+            #'pct_una_asistencia': 'Pct_Una_Asistencia',
+            #'nunca_asistencia': 'nunca_asistencia',
+            #'pct_nunca_asistencia': 'Pct_Nunca_Asistencia',
+            #'pct_alto_rendimiento': 'Pct_Alto_Rendimiento',
+            #'pct_riesgo': 'Pct_Riesgo'
         }
         
         df = df.rename(columns=column_map)
         df['Date'] = pd.to_datetime(df['Date'], format='%d%b%Y', errors='coerce')
         df = df.dropna(subset=['Date'])
         
-        cols_pct = ['Pct_Asistencia','Pct_Logro','Pct_Inicio','Pct_Proceso','Pct_Puntaje','Pct_Una_Asistencia', 'Pct_Nunca_Asistencia', 'Pct_Alto_Rendimiento', 'Pct_Riesgo']
+        cols_pct = ['Pct_Asistencia','Pct_Logro','Pct_Inicio','Pct_Proceso','Pct_Puntaje']
         for col in cols_pct:
             if col in df.columns:
                 if df[col].max() <= 1.0:
@@ -106,6 +106,8 @@ if df_raw is not None:
 
     tab1, tab2 = st.tabs(["📋 Asistencia", "📝 Rendimiento Académico"])
 
+    # --- TAB 1: ASISTENCIA ---
+
     with tab1:
         st.header("📅 Resumen de Asistencia")
         m1, m2, m3, m4 = st.columns(4)
@@ -118,12 +120,14 @@ if df_raw is not None:
             total_inscritos = df_filtered['Alumnos'].sum()
             asistencia_global = (total_asistentes / total_inscritos * 100) if total_inscritos > 0 else 0
             prom_niños = total_asistentes / num_sesiones if num_sesiones > 0 else 0
-
+              
+            # --- CÁLCULOS DE MÉTRICAS  ---
             m1.metric("Número de sesiones", num_sesiones)
             m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h")
             m3.metric("Promedio asistencia", f"{prom_niños:.1f} alum.")
             m4.metric("Promedio de asistencia (%)", f"{asistencia_global:.1f}%")
 
+            # --- GRÁFICO DE TENDENCIA DIARIA DE ASISTENCIAS   ---
             st.markdown("---")
             st.subheader("👥Tendencia Diaria de Asistencia")
             df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado'])['Pct_Asistencia'].mean().reset_index()
@@ -134,6 +138,7 @@ if df_raw is not None:
                 💡 **¿Cómo interpretar este gráfico?** Cada barra representa el porcentaje de estudiantes respecto del total registrado que asistieron a las clases.
             """)
 
+            # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL DE 3 SESIONES  ---
             st.markdown("---")
             st.subheader("📈 Análisis de Tendencia (Media móvil de 3 sesiones)")
             df_tendencia = df_filtered.groupby('Date')['Pct_Asistencia'].mean().reset_index().sort_values('Date')
@@ -146,7 +151,7 @@ if df_raw is not None:
             """)
 
             st.markdown("---")
-            # --- TABLA DE DATOS (RAW DATA) AL ESTILO LATERITE ---
+            # --- TABLA DE DATOS (RAW DATA)  ---
         with st.expander("📂 View filtered raw data"):
             # 1. Definimos las columnas que queremos mostrar (basado en tus nombres actuales)
             cols_mostrar = [
@@ -170,24 +175,22 @@ if df_raw is not None:
             )
             st.caption("Esta tabla muestra los registros exactos que están alimentando los gráficos superiores.")
             
-    # --- TAB 2: NOTAS ---
+    # --- TAB 2: RENDIMIENTO ACADÉMICO ---
     with tab2:
         st.header("🎯 Rendimiento Académico (Exit Tickets)")
         
         if not df_filtered.empty:
-            # --- 1. PRIMERO PREPARAMOS LOS DATOS (Esto resuelve el NameError) ---
             df_notas = df_filtered.groupby(['Date', 'Grado'])[['Pct_Logro', 'Pct_Puntaje']].mean().reset_index()
             df_notas = df_notas.sort_values('Date')
         
-            # --- 1. CÁLCULOS DE MÉTRICAS ACTUALIZADOS ---
- # --- 1. CÁLCULOS DE MÉTRICAS ACTUALIZADOS ---
+            # --- CÁLCULOS DE MÉTRICAS  ---
             
             # Métrica 1: Días con Exit Tickets Aplicados
             # Filtramos las filas que tienen puntaje y contamos cuántas fechas únicas existen
             dias_con_datos = df_filtered[df_filtered['Pct_Puntaje'].notna()]
             numero_aplicados = dias_con_datos['Date'].nunique()
             
-            # Métrica 2: Puntaje Promedio (Escala corregida)
+            # Métrica 2: Puntaje Promedio 
             prom_puntaje_raw = df_filtered['Pct_Puntaje'].mean()
             promedio_puntaje_real = prom_puntaje_raw * 100 if prom_puntaje_raw <= 1.0 else prom_puntaje_raw
             
@@ -196,7 +199,7 @@ if df_raw is not None:
             total_estudiantes_logro = df_filtered['Logro'].sum()
             promedio_logro_real = (total_estudiantes_logro / total_estudiantes_evaluados * 100) if total_estudiantes_evaluados > 0 else 0
 
-            # --- 2. VISUALIZACIÓN EN COLUMNAS ---
+            # --- MÉTRICAS ---
             m1, m2, m3 = st.columns(3)
             
             m1.metric(
@@ -220,7 +223,7 @@ if df_raw is not None:
             st.markdown("---")           
 
 
-# --- 3. SECCIÓN: LOGRO (Línea de tiempo) ---
+        # --- GRÁFICO DE PORCENTAJE PROMEDIO DE RESPUESTAS CORRECTAS EN EL EXIT TICKET  ---
         st.subheader("🌟 Respuestas Correctas en el Exit Ticket ")
         
         fig_puntaje = px.line(
@@ -240,7 +243,7 @@ if df_raw is not None:
             """)
         st.markdown("---")
         
-            # --- 5. SECCIÓN: DISTRIBUCIÓN DE NIVELES (Barras apiladas) ---
+        # --- GRÁFICO DE BARRAS POR NIVEL DE LOGRO OBTENIDO EN EXIT TICKET   ---
         st.subheader("📊 Distribución de Niveles de Aprendizaje ")
         
         if not df_filtered.empty:
