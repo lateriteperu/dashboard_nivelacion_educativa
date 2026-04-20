@@ -142,12 +142,68 @@ if df_raw is not None:
             fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)")
             st.plotly_chart(fig_asist, use_container_width=True)
 
+            # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
+            st.markdown("---")
+            st.subheader("📈 Análisis de Tendencia (Media móvil de 3 sesiones)")
+
+        if not df_filtered.empty:
+            # 1. Preparar los datos según el filtro de Institución
+            if sel_inst == 'Todas':
+            # Agrupamos por Fecha e Institución para las líneas individuales
+               df_plot = df_filtered.groupby(['Date', 'Institucion'])['Pct_Asistencia'].mean().reset_index()
+        
+               # Calculamos el promedio de TODOS los colegios por fecha
+               df_promedio = df_filtered.groupby('Date')['Pct_Asistencia'].mean().reset_index()
+               df_promedio['Institucion'] = 'PROMEDIO GENERAL'
+        
+               # Unimos ambos DataFrames
+               df_final = pd.concat([df_plot, df_promedio])
+               color_col = 'Institucion'
+            else:
+        # Si hay un colegio seleccionado, solo mostramos ese
+               df_final = df_filtered.groupby(['Date'])['Pct_Asistencia'].mean().reset_index()
+               df_final['Institucion'] = sel_inst
+               color_col = None
+
+    # 2. Corrección de escala y cálculo de Media Móvil por grupo
+            if df_final['Pct_Asistencia'].max() <= 1.0:
+               df_final['Pct_Asistencia'] = df_final['Pct_Asistencia'] * 100
+
+         # Calculamos la media móvil para cada línea por separado
+               df_final = df_final.sort_values(['Institucion', 'Date'])
+               df_final['Media_Movil'] = df_final.groupby('Institucion')['Pct_Asistencia'].transform(
+                  lambda x: x.rolling(window=3, min_periods=1).mean()
+    )
+
+    # 3. Creación del gráfico
+            fig_comparativo = px.line(
+            df_final, 
+            x='Date', 
+            y='Media_Movil', 
+            color='Institucion',
+            line_shape='spline',
+            title="Tendencia de Asistencia: Colegios vs. Promedio General",
+            labels={'Media_Movil': 'Asistencia (%)', 'Date': 'Fecha'},
+            # Definimos colores específicos: el promedio en negro o gris oscuro para que resalte
+            color_discrete_map={'PROMEDIO GENERAL': '#333333'} 
+    )
+
+    # Resaltar la línea del promedio (hacerla más gruesa)
+            fig_comparativo.update_traces(
+            patch={"line": {"width": 4, "dash": 'dot'}}, 
+            selector={'name': 'PROMEDIO GENERAL'}
+    )
+    
+            fig_comparativo.update_layout(yaxis_range=[0, 105])
+            st.plotly_chart(fig_comparativo, use_container_width=True)
+
+            st.info("💡 **Tip:** Al seleccionar 'Todas', verás una línea punteada que representa el promedio de los 4 colegios.")
+
             with st.expander("📂 Ver datos de asistencia (Raw Data)"):
                 df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
                 df_tabla_asist['Date'] = df_tabla_asist['Date'].dt.strftime('%d-%m-%Y')
                 st.dataframe(df_tabla_asist.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
 
-    # --- TAB 2: RENDIMIENTO ACADÉMICO ---
  # --- TAB 2: RENDIMIENTO ACADÉMICO ---
     with tab2:
         st.header("🎯 Rendimiento Académico (Exit Tickets)")
