@@ -35,6 +35,13 @@ def load_data():
     try:
         df = pd.read_csv('plus_petrol_2026_pii_grupal.csv')
         
+        # ... (aquí va tu column_map y el rename que ya tienes) ...
+        df = df.rename(columns=column_map)
+
+        # --- LÍNEA PARA CAMBIAR EL NOMBRE DE LA SESIÓN ---
+        # Reemplazamos "Sesión de Reforzamiento" por "Sesión regular" en la columna Sesion
+        df['Sesion'] = df['Sesion'].replace('Sesión de Reforzamiento', 'Sesión regular')
+        
         column_map = {
             'q8_fecha_clase': 'Date',
             'q7_sesion': 'Sesion',
