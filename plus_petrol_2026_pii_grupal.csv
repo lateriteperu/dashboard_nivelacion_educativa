@@ -1,12 +1,16 @@
 q3_curso,q4_institucion,q5_grado,q7_sesion,n_alumnos,q8_fecha_clase,pct_puntaje,duration_h,asistencia,logro,proceso,inicio,pct_asistencia,pct_logro,pct_proceso,pct_inicio
 Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de reforzamiento,29,13apr2026,.3125,2.6666667,4,0,2,2,.13793103,0,.5,.5
 Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de reforzamiento,29,16apr2026,.5,2.6666667,3,0,3,0,.10344828,0,1,0
-Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,15apr2026,.5,1.3333334,2,0,1,1,.068965517,0,.5,.5
+Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,15apr2026,.55555558,1.3333334,3,0,2,1,.10344828,0,.66666669,.33333334
+Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,18apr2026,,1.3333334,0,0,0,0,0,,,
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de reforzamiento,22,06apr2026,.46875,2.6666667,8,4,1,3,.36363637,.5,.125,.375
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de reforzamiento,29,09apr2026,.6875,2.6666667,15,8,1,3,.51724136,.53333336,.06666667,.2
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,08apr2026,,1.3333334,9,0,0,0,.31034482,0,0,0
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),4to de Secundaria,Sesión de consolidación (miércoles y sábados),29,11apr2026,.33333334,1.3333334,3,0,1,2,.10344828,0,.33333334,.66666669
 Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de reforzamiento,23,14apr2026,.64999998,2.6666667,5,3,2,0,.2173913,.60000002,.40000001,0
+Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de reforzamiento,23,17apr2026,.5625,2.6666667,4,2,1,1,.17391305,.5,.25,.25
+Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de consolidación (miércoles y sábados),23,15apr2026,.66666669,1.3333334,2,1,0,1,.086956523,.5,0,.5
+Lectoescritura,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de consolidación (miércoles y sábados),23,18apr2026,2.5,1.3333334,4,4,0,0,.17391305,1,0,0
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de reforzamiento,23,07apr2026,.69999999,2.6666667,5,4,0,1,.2173913,.80000001,0,.2
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de reforzamiento,23,10apr2026,.8125,2.6666667,4,4,0,0,.17391305,1,0,0
 Matemática,I.E Carlos Ríos Ríos (Nuevo Mundo),5to de Secundaria,Sesión de consolidación (miércoles y sábados),23,08apr2026,,1.3333334,5,0,0,0,.2173913,0,0,0
