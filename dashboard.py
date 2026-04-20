@@ -57,7 +57,14 @@ def load_data():
         # 2. Renombramos las columnas PRIMERO
         df = df.rename(columns=column_map)
 
-        # 3. AHORA REEMPLAZAMOS (Ya existe la columna 'Sesion')
+        # 2. REEMPLAZO ROBUSTO:
+        # Convertimos a minúsculas, quitamos espacios extra y reemplazamos
+        df['Sesion'] = df['Sesion'].str.strip() # Limpia espacios invisibles
+        
+        # Usamos un reemplazo directo según lo que veo en tu captura:
+        df['Sesion'] = df['Sesion'].replace('Sesión de reforzamiento', 'Sesión regular')
+        
+        # Por si acaso existiera con la R mayúscula también:
         df['Sesion'] = df['Sesion'].replace('Sesión de Reforzamiento', 'Sesión regular')
         
         # 4. Procesamos fechas
