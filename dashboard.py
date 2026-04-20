@@ -139,25 +139,43 @@ if df_raw is not None:
                 st.dataframe(df_tabla_asist.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
 
     # --- TAB 2: RENDIMIENTO ACADÉMICO ---
+ # --- TAB 2: RENDIMIENTO ACADÉMICO ---
     with tab2:
         st.header("🎯 Rendimiento Académico (Exit Tickets)")
         if not df_filtered.empty:
-            # 1. Cálculos de Métricas
-            dias_con_evaluacion = df_filtered[df_filtered['Pct_Puntaje'].notna()]
-            numero_aplicados = dias_con_evaluacion['Date'].nunique()
+            # --- 1. Cálculos de Métricas ---
             
+            # Total de sesiones en el periodo filtrado (independientemente de si hubo nota o no)
+            total_sesiones_periodo = df_filtered.groupby(['Date', 'Institucion', 'Sesion']).ngroups
+            
+            # Sesiones que SÍ tienen evaluación (Pct_Puntaje no es nulo)
+            dias_con_evaluacion = df_filtered[df_filtered['Pct_Puntaje'].notna()]
+            numero_aplicados = dias_con_evaluacion.groupby(['Date', 'Institucion', 'Sesion']).ngroups
+            
+            # CÁLCULO NUEVO: Porcentaje de aplicación
+            pct_aplicacion = (numero_aplicados / total_sesiones_periodo * 100) if total_sesiones_periodo > 0 else 0
+            
+            # Promedio de puntaje
             prom_puntaje_raw = df_filtered['Pct_Puntaje'].mean()
             promedio_puntaje_real = prom_puntaje_raw * 100 if prom_puntaje_raw <= 1.0 else prom_puntaje_raw
             
+            # Estudiantes en Logro
             total_est_eval = df_filtered[['Logro', 'Proceso', 'Inicio']].sum().sum()
             total_est_logro = df_filtered['Logro'].sum()
             promedio_logro_real = (total_est_logro / total_est_eval * 100) if total_est_eval > 0 else 0
 
-            # 2. Render de Métricas
-            met1, met2, met3 = st.columns(3)
-            met1.metric("Sesiones con Evaluación", f"{numero_aplicados}")
-            met2.metric("Puntaje Promedio", f"{promedio_puntaje_real:.1f}%")
-            met3.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%")
+            # --- 2. Render de Métricas (Ahora con 4 columnas) ---
+            m1, m2, m3, m4 = st.columns(4)
+            
+            m1.metric("Sesiones con Evaluación", f"{numero_aplicados}")
+            
+            # La nueva métrica conectada a la anterior
+            m2.metric("Sesiones con Evaluación (%)", f"{pct_aplicacion:.1f}%", 
+                      help="Porcentaje de sesiones realizadas que cuentan con un Exit Ticket registrado.")
+            
+            m3.metric("Puntaje Promedio", f"{promedio_puntaje_real:.1f}%")
+            
+            m4.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%")
 
             st.markdown("---")
 
