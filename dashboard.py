@@ -309,3 +309,46 @@ if not df_filtered.empty:
         """)
     except Exception as e:
         st.error(f"Error al generar el gráfico de niveles: {e}")
+
+        st.markdown("---")
+        # --- TABLA DE DATOS (RAW DATA) ---
+        with st.expander("📂 Ver datos detallados (Raw Data)"):
+            # 1. Definimos las columnas a mostrar
+            cols_mostrar = [
+                'Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 
+                'Alumnos', 'Asistencia_Absoluta', 'Inicio', 'Pct_Inicio', 
+                'Proceso', 'Pct_Proceso', 'Logro', 'Pct_Logro', 'Pct_Puntaje'
+            ]
+            
+            # 2. Filtramos columnas existentes
+            cols_reales = [c for c in cols_mostrar if c in df_filtered.columns]
+            df_tabla = df_filtered[cols_reales].copy()
+            
+            # 3. Formateo Crítico: Convertir decimales a porcentajes 0-100 para la vista
+            cols_a_formatear = ['Pct_Inicio', 'Pct_Proceso', 'Pct_Logro', 'Pct_Puntaje']
+            for col in cols_a_formatear:
+                if col in df_tabla.columns:
+                    # Si el promedio es <= 1, asumimos que son decimales y multiplicamos
+                    if df_tabla[col].mean() <= 1.0:
+                        df_tabla[col] = df_tabla[col] * 100
+            
+            # 4. Limpieza estética de nombres de columnas
+            nombres_limpios = {c: c.replace('Pct_', '% ').replace('_', ' ') for c in cols_reales}
+            df_tabla = df_tabla.rename(columns=nombres_limpios)
+
+            # 5. Formateo de fecha
+            df_tabla['Date'] = df_tabla['Date'].dt.strftime('%d-%m-%Y')
+            
+            # 6. Mostrar tabla interactiva con formato de 1 decimal
+            st.dataframe(
+                df_tabla.sort_values('Date', ascending=False), 
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "% Puntaje": st.column_config.NumberColumn(format="%.1f%%"),
+                    "% Logro": st.column_config.NumberColumn(format="%.1f%%"),
+                    "% Proceso": st.column_config.NumberColumn(format="%.1f%%"),
+                    "% Inicio": st.column_config.NumberColumn(format="%.1f%%"),
+                }
+            )
+            st.caption("🔍 Esta tabla muestra los registros procesados según los filtros seleccionados.")
