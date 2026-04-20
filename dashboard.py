@@ -29,15 +29,12 @@ def check_password():
 if not check_password():
     st.stop()
 
-# --- CARGA DE DATOS ---
-@st.cache_data
+# @st.cache_data
 def load_data():
     try:
         df = pd.read_csv('plus_petrol_2026_pii_grupal.csv')
         
-        # ... (aquí va tu column_map y el rename que ya tienes) ...
-        df = df.rename(columns=column_map)
-        
+        # 1. Definimos el mapa de columnas
         column_map = {
             'q8_fecha_clase': 'Date',
             'q7_sesion': 'Sesion',
@@ -55,24 +52,23 @@ def load_data():
             'pct_inicio': 'Pct_Inicio',
             'pct_proceso': 'Pct_Proceso',
             'pct_puntaje': 'Pct_Puntaje'
-            #'una_vez_asistencia': 'una_vez_asistencia',
-            #'pct_una_asistencia': 'Pct_Una_Asistencia',
-            #'nunca_asistencia': 'nunca_asistencia',
-            #'pct_nunca_asistencia': 'Pct_Nunca_Asistencia',
-            #'pct_alto_rendimiento': 'Pct_Alto_Rendimiento',
-            #'pct_riesgo': 'Pct_Riesgo'
         }
 
-        # Reemplazamos "Sesión de Reforzamiento" por "Sesión regular" en la columna Sesion
+        # 2. Renombramos las columnas PRIMERO
+        df = df.rename(columns=column_map)
+
+        # 3. AHORA REEMPLAZAMOS (Ya existe la columna 'Sesion')
         df['Sesion'] = df['Sesion'].replace('Sesión de Reforzamiento', 'Sesión regular')
         
-        df = df.rename(columns=column_map)
+        # 4. Procesamos fechas
         df['Date'] = pd.to_datetime(df['Date'], format='%d%b%Y', errors='coerce')
         df = df.dropna(subset=['Date'])
         
+        # 5. Corregimos escalas de porcentajes
         cols_pct = ['Pct_Asistencia','Pct_Logro','Pct_Inicio','Pct_Proceso','Pct_Puntaje']
         for col in cols_pct:
             if col in df.columns:
+                # Si el valor máximo es <= 1 (ej: 0.8), lo llevamos a escala 100
                 if df[col].max() <= 1.0:
                    df[col] = df[col] * 100
         
@@ -80,7 +76,7 @@ def load_data():
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
         return None
-
+    
 df_raw = load_data()
 
 if df_raw is not None:
