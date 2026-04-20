@@ -147,44 +147,44 @@ if df_raw is not None:
             st.markdown("---")
             st.subheader("📈 Análisis de Tendencia (Media móvil de 3 sesiones)")
 
-        if not df_filtered.empty:
+            if not df_filtered.empty:
         # 1. Crear el DataFrame base según la selección
-            if sel_inst == 'Todas':
+               if sel_inst == 'Todas':
               # Datos por cada institución
-               df_plot = df_filtered.groupby(['Date', 'Institucion'])['Pct_Asistencia'].mean().reset_index()
+                  df_plot = df_filtered.groupby(['Date', 'Institucion'])['Pct_Asistencia'].mean().reset_index()
         
               # Datos del Promedio General
-               df_promedio = df_filtered.groupby('Date')['Pct_Asistencia'].mean().reset_index()
-               df_promedio['Institucion'] = 'PROMEDIO GENERAL'
+                  df_promedio = df_filtered.groupby('Date')['Pct_Asistencia'].mean().reset_index()
+                  df_promedio['Institucion'] = 'PROMEDIO GENERAL'
         
               # Unimos ambos
-               df_final = pd.concat([df_plot, df_promedio], ignore_index=True)
-            else:
+                  df_final = pd.concat([df_plot, df_promedio], ignore_index=True)
+               else:
               # Solo el colegio seleccionado
-               df_final = df_filtered.groupby(['Date'])['Pct_Asistencia'].mean().reset_index()
-               df_final['Institucion'] = sel_inst
+                   df_final = df_filtered.groupby(['Date'])['Pct_Asistencia'].mean().reset_index()
+                   df_final['Institucion'] = sel_inst
 
              # 2. Corrección de escala (0-100)
-            if df_final['Pct_Asistencia'].max() <= 1.0:
-               df_final['Pct_Asistencia'] = df_final['Pct_Asistencia'] * 100
+               if df_final['Pct_Asistencia'].max() <= 1.0:
+                  df_final['Pct_Asistencia'] = df_final['Pct_Asistencia'] * 100
 
             # 3. Cálculo de Media Móvil (Importante: ordenar por fecha)
                df_final = df_final.sort_values(['Institucion', 'Date'])
                df_final['Media_Movil'] = df_final.groupby('Institucion')['Pct_Asistencia'].transform(
-               lambda x: x.rolling(window=3, min_periods=1).mean()
+                   lambda x: x.rolling(window=3, min_periods=1).mean()
     )
 
              # 4. Creación del gráfico
              # Usamos siempre 'Institucion' en color para evitar el ValueError
                fig_comparativo = px.line(
-               df_final, 
-               x='Date', 
-               y='Media_Movil', 
-               color='Institucion',
-               line_shape='spline',
-               title="Tendencia de Asistencia: Comparativa",
-               labels={'Media_Movil': 'Asistencia (%)', 'Date': 'Fecha'},
-               color_discrete_map={'PROMEDIO GENERAL': '#333333'} 
+                   df_final, 
+                   x='Date', 
+                   y='Media_Movil', 
+                   color='Institucion',
+                   line_shape='spline',
+                   title="Tendencia de Asistencia: Comparativa",
+                   labels={'Media_Movil': 'Asistencia (%)', 'Date': 'Fecha'},
+                   color_discrete_map={'PROMEDIO GENERAL': '#333333'} 
     )
 
              # 5. Estilo especial para la línea de promedio (si existe)
@@ -199,7 +199,7 @@ if df_raw is not None:
  
                st.info("💡 **Interpretación:** La línea representa la tendencia suavizada. El promedio general aparece resaltado en color oscuro.")
 
-            with st.expander("📂 Ver datos de asistencia (Raw Data)"):
+        with st.expander("📂 Ver datos de asistencia (Raw Data)"):
                 df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
                 df_tabla_asist['Date'] = df_tabla_asist['Date'].dt.strftime('%d-%m-%Y')
                 st.dataframe(df_tabla_asist.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
