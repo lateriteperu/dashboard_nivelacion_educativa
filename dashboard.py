@@ -311,8 +311,7 @@ if not df_filtered.empty:
         st.error(f"Error al generar el gráfico de niveles: {e}")
 
         st.markdown("---")
-        # --- TABLA DE DATOS (RAW DATA) ---
-        with st.expander("📂 Ver datos detallados (Raw Data)"):
+    with st.expander("📂 Ver datos detallados (Raw Data)"):
             # 1. Definimos las columnas a mostrar
             cols_mostrar = [
                 'Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 
