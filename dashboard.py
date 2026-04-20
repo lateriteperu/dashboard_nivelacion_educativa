@@ -245,63 +245,67 @@ if df_raw is not None:
         st.markdown("---")
         
         # --- GRÁFICO DE BARRAS POR NIVEL DE LOGRO OBTENIDO EN EXIT TICKET   ---
-        st.subheader("📊 Distribución de Niveles de Aprendizaje ")
+st.subheader("📊 Distribución de Niveles de Aprendizaje")
+
+if not df_filtered.empty:
+    # 1. Agrupamos por fecha y SUMAMOS las cantidades de alumnos (no los porcentajes)
+    # Usamos las columnas de conteo directo: 'Logro', 'Proceso', 'Inicio'
+    df_counts = df_filtered.groupby('Date')[['Logro', 'Proceso', 'Inicio']].sum().reset_index()
+    
+    # 2. Calculamos el total de asistentes reales por día
+    df_counts['Total_Asistentes'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
+    
+    # 3. Convertimos las cantidades en porcentajes sobre el total de asistentes
+    # Creamos una copia para el gráfico
+    df_niveles = df_counts[['Date']].copy()
+    
+    # Evitamos división por cero si un día no hubo ningún asistente
+    mask = df_counts['Total_Asistentes'] > 0
+    df_niveles.loc[mask, 'Logro'] = (df_counts['Logro'] / df_counts['Total_Asistentes']) * 100
+    df_niveles.loc[mask, 'Proceso'] = (df_counts['Proceso'] / df_counts['Total_Asistentes']) * 100
+    df_niveles.loc[mask, 'Inicio'] = (df_counts['Inicio'] / df_counts['Total_Asistentes']) * 100
+    
+    # 4. Transformamos a formato largo para Plotly
+    df_melted = df_niveles.melt(
+        id_vars='Date', 
+        value_vars=['Logro', 'Proceso', 'Inicio'],
+        var_name='Estado', 
+        value_name='Porcentaje'
+    )
+
+    # 5. Creación del gráfico
+    try:
+        fig_niveles = px.bar(
+            df_melted, 
+            x='Date', 
+            y='Porcentaje', 
+            color='Estado',
+            barmode='stack',
+            title="Distribución de Niveles entre Estudiantes Asistentes",
+            color_discrete_map={
+                'Logro': '#00CC96',   # Verde
+                'Proceso': '#FECB52', # Amarillo
+                'Inicio': '#EF553B'   # Rojo
+            },
+            text_auto='.1f'
+        )
         
-        if not df_filtered.empty:
-            # 1. Agrupamos y promediamos
-            df_niveles = df_filtered.groupby('Date')[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].mean().reset_index()
-            
-            # 2. Calculamos los No Evaluados (Diferencia para llegar a 100)
-            # Usamos fillna(0) solo para el cálculo matemático
-            df_niveles['Pct_No_Evaluados'] = 100 - df_niveles[['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio']].sum(axis=1)
-            df_niveles['Pct_No_Evaluados'] = df_niveles['Pct_No_Evaluados'].clip(lower=0)
-            
-            # 3. Transformamos a formato largo
-            df_melted = df_niveles.melt(
-                id_vars='Date', 
-                value_vars=['Pct_Logro', 'Pct_Proceso', 'Pct_Inicio', 'Pct_No_Evaluados'],
-                var_name='Estado', 
-                value_name='Porcentaje'
-            )
-
-            # Limpiamos los nombres: quitamos 'Pct_' y cambiamos guiones bajos por espacios
-            df_melted['Estado'] = df_melted['Estado'].str.replace('Pct_', '').str.replace('_', ' ')
-            
-            # REPARACIÓN CRÍTICA: Eliminamos cualquier fila que haya quedado con Porcentaje nulo
-            df_melted = df_melted.dropna(subset=['Porcentaje'])
-
-            # 4. Creación del gráfico con manejo de excepciones
-            try:
-                fig_niveles = px.bar(
-                    df_melted, 
-                    x='Date', 
-                    y='Porcentaje', 
-                    color='Estado',
-                    barmode='stack',
-                    title="Evolución del Desempeño Académico en los Exit Tickets",
-                    # Asegúrate de que estos nombres coincidan con el .replace de arriba
-                    color_discrete_map={
-                        'Logro': '#00CC96',       # Verde
-                        'Proceso': '#FECB52',     # Amarillo
-                        'Inicio': '#EF553B',      # Rojo
-                        'No Evaluados': '#D3D3D3' # Gris
-                    },
-                    text_auto='.1f'
-                )
-                
-                fig_niveles.update_traces(textposition='inside', insidetextanchor='middle')
-                fig_niveles.update_layout(
-                    xaxis_tickformat='%d %b',
-                    bargap=0.3,
-                    yaxis_range=[0, 105],
-                    legend_title="Condición"
-                )
-                
-                st.plotly_chart(fig_niveles, use_container_width=True)
-                st.info("""💡 **¿Cómo interpretar este gráfico?:** Cada columna representa el universo total de estudiantes registrados. Los niveles se definen según el desempeño en el *Exit Ticket*:
-                **Logro:** Estudiantes con 80% o más de respuestas correctas.
-                **En Proceso:** Estudiantes con un desempeño entre el 50% y 79%.
-                **Inicio:** Estudiantes con un desempeño inferior al 50%.
-                """)
-            except Exception as e:
-                st.error(f"Error al generar el gráfico de barras: {e}")
+        fig_niveles.update_traces(textposition='inside', insidetextanchor='middle')
+        fig_niveles.update_layout(
+            xaxis_tickformat='%d %b',
+            bargap=0.3,
+            yaxis_range=[0, 105],
+            yaxis_title="Porcentaje de Asistentes (%)",
+            legend_title="Nivel de Logro"
+        )
+        
+        st.plotly_chart(fig_niveles, use_container_width=True)
+        
+        st.info("""
+            💡 **Guía de Interpretación:** Cada columna representa el **100% de los estudiantes que asistieron** a la sesión. Los niveles se definen según su desempeño en el *Exit Ticket*:
+            * **Logro:** Estudiantes con 80% o más de respuestas correctas.
+            * **En Proceso:** Estudiantes con un desempeño entre el 50% y 79%.
+            * **Inicio:** Estudiantes con un desempeño inferior al 50%.
+        """)
+    except Exception as e:
+        st.error(f"Error al generar el gráfico de niveles: {e}")
