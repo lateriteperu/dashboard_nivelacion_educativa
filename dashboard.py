@@ -107,12 +107,10 @@ if df_raw is not None:
     tab1, tab2 = st.tabs(["📋 Asistencia", "📝 Rendimiento Académico"])
 
     # --- TAB 1: ASISTENCIA ---
-
     with tab1:
         st.header("📅 Resumen de Asistencia")
-        m1, m2, m3, m4 = st.columns(4)
-        
         if not df_filtered.empty:
+            # Cálculos
             df_sesiones_unicas = df_filtered.groupby(['Date', 'Institucion', 'Sesion'])['Horas'].first().reset_index()
             num_sesiones = len(df_sesiones_unicas)
             horas_totales = df_sesiones_unicas['Horas'].sum()
@@ -120,156 +118,87 @@ if df_raw is not None:
             total_inscritos = df_filtered['Alumnos'].sum()
             asistencia_global = (total_asistentes / total_inscritos * 100) if total_inscritos > 0 else 0
             prom_niños = total_asistentes / num_sesiones if num_sesiones > 0 else 0
-              
-            # --- CÁLCULOS DE MÉTRICAS  ---
+            
+            # Métricas
+            m1, m2, m3, m4 = st.columns(4)
             m1.metric("Número de sesiones", num_sesiones)
             m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h")
             m3.metric("Promedio asistencia", f"{prom_niños:.1f} alum.")
-            m4.metric("Promedio de asistencia (%)", f"{asistencia_global:.1f}%")
+            m4.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%")
 
-            # --- GRÁFICO DE TENDENCIA DIARIA DE ASISTENCIAS   ---
             st.markdown("---")
-            st.subheader("👥Tendencia Diaria de Asistencia")
+            st.subheader("👥 Tendencia Diaria de Asistencia")
             df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado'])['Pct_Asistencia'].mean().reset_index()
             fig_asist = px.bar(df_asistencia_diaria, x='Date', y='Pct_Asistencia', color='Grado', barmode='group', text_auto='.1f')
-            fig_asist.update_yaxes(range=[0, 100])
-            labels={'Pct_Asistencia': 'Asistencia (%)', 'Date': 'Fecha' }
+            fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)")
             st.plotly_chart(fig_asist, use_container_width=True)
-            st.info("""
-                💡 **¿Cómo interpretar este gráfico?** Cada barra representa el porcentaje de estudiantes respecto del total registrado que asistieron a las clases.
-            """)
 
-            # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL DE 3 SESIONES  ---
-            st.markdown("---")
-            st.subheader("📈 Análisis de Tendencia (Media móvil de 3 sesiones)")
-            df_tendencia = df_filtered.groupby('Date')['Pct_Asistencia'].mean().reset_index().sort_values('Date')
-            df_tendencia['Media_Movil'] = df_tendencia['Pct_Asistencia'].rolling(window=3, min_periods=1).mean()
-            fig_media_movil = px.line(df_tendencia, x='Date', y='Media_Movil', line_shape='spline')
-            fig_media_movil.add_scatter(x=df_tendencia['Date'], y=df_tendencia['Pct_Asistencia'], mode='markers', name='Dato Diario')
-            st.plotly_chart(fig_media_movil, use_container_width=True)
-            st.info("""
-                💡 **¿Cómo interpretar este gráfico?** Cada punto representa un porcentaje promedio de asistencia de las últimas 3 sesiones.
-            """)
+            with st.expander("📂 Ver datos de asistencia (Raw Data)"):
+                df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
+                df_tabla_asist['Date'] = df_tabla_asist['Date'].dt.strftime('%d-%m-%Y')
+                st.dataframe(df_tabla_asist.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
 
-            st.markdown("---")
-            # --- TABLA DE DATOS (RAW DATA)  ---
-        with st.expander("📂 View filtered raw data"):
-            # 1. Definimos las columnas que queremos mostrar (basado en tus nombres actuales)
-            cols_mostrar = [
-                'Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 
-                'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia', 'Horas', 
-            ]
-            
-            # 2. Creamos una copia del dataframe filtrado con esas columnas
-            # (Usamos cols_reales para que no de error si alguna columna falta)
-            cols_reales = [c for c in cols_mostrar if c in df_filtered.columns]
-            df_tabla = df_filtered[cols_reales].copy()
-            
-            # 3. Formateamos la fecha para que sea idéntica al CSV original
-            df_tabla['Date'] = df_tabla['Date'].dt.strftime('%d-%m-%Y')
-            
-            # 4. Mostramos la tabla interactiva
-            st.dataframe(
-                df_tabla.sort_values('Date', ascending=False), 
-                use_container_width=True,
-                hide_index=True
-            )
-            st.caption("Esta tabla muestra los registros exactos que están alimentando los gráficos superiores.")
-            
     # --- TAB 2: RENDIMIENTO ACADÉMICO ---
     with tab2:
         st.header("🎯 Rendimiento Académico (Exit Tickets)")
-        
         if not df_filtered.empty:
-            df_notas = df_filtered.groupby(['Date', 'Grado'])[['Pct_Logro', 'Pct_Puntaje']].mean().reset_index()
-            df_notas = df_notas.sort_values('Date')
-        
-            # --- CÁLCULOS DE MÉTRICAS ---
-            dias_con_datos = df_filtered[df_filtered['Pct_Puntaje'].notna()]
-            numero_aplicados = dias_con_datos['Date'].nunique()
+            # 1. Cálculos de Métricas
+            dias_con_evaluacion = df_filtered[df_filtered['Pct_Puntaje'].notna()]
+            numero_aplicados = dias_con_evaluacion['Date'].nunique()
             
             prom_puntaje_raw = df_filtered['Pct_Puntaje'].mean()
             promedio_puntaje_real = prom_puntaje_raw * 100 if prom_puntaje_raw <= 1.0 else prom_puntaje_raw
             
-            total_estudiantes_evaluados = df_filtered[['Logro', 'Proceso', 'Inicio']].sum().sum()
-            total_estudiantes_logro = df_filtered['Logro'].sum()
-            promedio_logro_real = (total_estudiantes_logro / total_estudiantes_evaluados * 100) if total_estudiantes_evaluados > 0 else 0
+            total_est_eval = df_filtered[['Logro', 'Proceso', 'Inicio']].sum().sum()
+            total_est_logro = df_filtered['Logro'].sum()
+            promedio_logro_real = (total_est_logro / total_est_eval * 100) if total_est_eval > 0 else 0
 
-            # --- MÉTRICAS ---
-            m1, m2, m3 = st.columns(3)
-            m1.metric(label="Número de Exit Tickets Aplicados", value=f"{numero_aplicados}")
-            m2.metric(label="Respuestas correctas (% Exit Ticket)", value=f"{promedio_puntaje_real:.1f}%")
-            m3.metric(label="Estudiantes con Nivel Logro", value=f"{promedio_logro_real:.1f}%")
+            # 2. Render de Métricas
+            met1, met2, met3 = st.columns(3)
+            met1.metric("Sesiones con Evaluación", f"{numero_aplicados}")
+            met2.metric("Puntaje Promedio", f"{promedio_puntaje_real:.1f}%")
+            met3.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%")
 
-            st.markdown("---")           
-
-            # --- GRÁFICO 1: LÍNEAS ---
-            st.subheader("🌟 Respuestas Correctas en el Exit Ticket")
-            
-            # Ajuste de escala para que la línea no salga en decimales
-            df_notas_plot = df_notas.copy()
-            if df_notas_plot['Pct_Puntaje'].max() <= 1.0:
-                df_notas_plot['Pct_Puntaje'] = df_notas_plot['Pct_Puntaje'] * 100
-
-            fig_puntaje = px.line(
-                df_notas_plot, x='Date', y='Pct_Puntaje', color='Grado',
-                title='Porcentaje de Respuestas Correctas en el Exit Ticket (% total de preguntas)',
-                markers=True, labels={'Pct_Puntaje': 'Puntaje (%)'}
-            )
-            fig_puntaje.update_layout(yaxis_range=[0, 105])
-            fig_puntaje.update_traces(connectgaps=True)
-            st.plotly_chart(fig_puntaje, use_container_width=True)
-            
-            st.info("💡 **Interpretación:** Cada punto representa el porcentaje promedio de respuestas correctas.")
             st.markdown("---")
-            
-            # --- GRÁFICO 2: BARRAS APILADAS ---
-            # ¡IMPORTANTE! Este bloque ahora tiene 8 espacios de sangría para estar dentro del 'if'
-            st.subheader("📊 Distribución de Niveles de Aprendizaje")
 
+            # 3. Gráfico de Líneas (Puntaje)
+            st.subheader("🌟 Evolución de Respuestas Correctas")
+            df_notas = df_filtered.groupby(['Date', 'Grado'])['Pct_Puntaje'].mean().reset_index()
+            # Corrección de escala para el gráfico
+            df_notas['Pct_Puntaje'] = df_notas['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
+            
+            fig_linea = px.line(df_notas, x='Date', y='Pct_Puntaje', color='Grado', markers=True)
+            fig_linea.update_layout(yaxis_range=[0, 105], yaxis_title="Puntaje (%)")
+            st.plotly_chart(fig_linea, use_container_width=True)
+
+            st.markdown("---")
+
+            # 4. Gráfico de Barras (Niveles sobre Asistentes)
+            st.subheader("📊 Distribución de Niveles (Solo Asistentes)")
             df_counts = df_filtered.groupby('Date')[['Logro', 'Proceso', 'Inicio']].sum().reset_index()
-            df_counts['Total_Asistentes'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
+            df_counts['Total'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
             
-            df_niveles = df_counts[['Date']].copy()
-            mask = df_counts['Total_Asistentes'] > 0
-            df_niveles.loc[mask, 'Logro'] = (df_counts['Logro'] / df_counts['Total_Asistentes']) * 100
-            df_niveles.loc[mask, 'Proceso'] = (df_counts['Proceso'] / df_counts['Total_Asistentes']) * 100
-            df_niveles.loc[mask, 'Inicio'] = (df_counts['Inicio'] / df_counts['Total_Asistentes']) * 100
+            for col in ['Logro', 'Proceso', 'Inicio']:
+                df_counts[col] = (df_counts[col] / df_counts['Total']) * 100
             
-            df_melted = df_niveles.melt(id_vars='Date', value_vars=['Logro', 'Proceso', 'Inicio'], var_name='Estado', value_name='Porcentaje')
+            df_melt = df_counts.melt(id_vars='Date', value_vars=['Logro', 'Proceso', 'Inicio'], var_name='Nivel', value_name='Porcentaje')
+            
+            fig_barras = px.bar(
+                df_melt, x='Date', y='Porcentaje', color='Nivel', barmode='stack', text_auto='.1f',
+                color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'}
+            )
+            fig_barras.update_layout(yaxis_range=[0, 105])
+            st.plotly_chart(fig_barras, use_container_width=True)
 
-            try:
-                fig_niveles = px.bar(
-                    df_melted, x='Date', y='Porcentaje', color='Estado', barmode='stack',
-                    title="Distribución de Niveles entre Estudiantes Asistentes",
-                    color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'},
-                    text_auto='.1f'
-                )
-                fig_niveles.update_layout(yaxis_range=[0, 105], xaxis_tickformat='%d %b')
-                st.plotly_chart(fig_niveles, use_container_width=True)
-                
-                st.info("""
-                    💡 **Guía de Interpretación:** Cada columna representa el **100% de los estudiantes que asistieron**.
-                    * **Logro:** ≥ 80% correctas.
-                    * **En Proceso:** 50% - 79% correctas.
-                    * **Inicio:** < 50% correctas.
-                """)
-            except Exception as e:
-                st.error(f"Error al generar el gráfico de niveles: {e}")
+            st.info("""💡 **Guía de Interpretación:** La barra representa el 100% de los asistentes. Logro (≥80%), Proceso (50-79%), Inicio (<50%).""")
 
             st.markdown("---")
-            
-            # --- TABLA RAW DATA (TAB 2) ---
-            with st.expander("📂 Ver datos detallados (Raw Data)"):
-                cols_mostrar = ['Date', 'Institucion', 'Grado', 'Curso', 'Sesion', 'Alumnos', 'Asistencia_Absoluta', 'Inicio', 'Pct_Inicio', 'Proceso', 'Pct_Proceso', 'Logro', 'Pct_Logro', 'Pct_Puntaje']
-                cols_reales = [c for c in cols_mostrar if c in df_filtered.columns]
-                df_tabla = df_filtered[cols_reales].copy()
-                
-                for col in ['Pct_Inicio', 'Pct_Proceso', 'Pct_Logro', 'Pct_Puntaje']:
-                    if col in df_tabla.columns and df_tabla[col].mean() <= 1.0:
-                        df_tabla[col] = df_tabla[col] * 100
-                
-                df_tabla = df_tabla.rename(columns={c: c.replace('Pct_', '% ').replace('_', ' ') for c in cols_reales})
-                df_tabla['Date'] = df_tabla['Date'].dt.strftime('%d-%m-%Y')
-                
-                st.dataframe(df_tabla.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
+
+            # 5. Tabla Raw Data (Tab 2)
+            with st.expander("📂 Ver datos detallados de rendimiento"):
+                cols_raw = ['Date', 'Institucion', 'Grado', 'Alumnos', 'Asistencia_Absoluta', 'Logro', 'Proceso', 'Inicio', 'Pct_Puntaje']
+                df_t = df_filtered[cols_raw].copy()
+                df_t['Date'] = df_t['Date'].dt.strftime('%d-%m-%Y')
+                # Formatear el puntaje a % en la tabla
+                df_t['Pct_Puntaje'] = df_t['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
+                st.dataframe(df_t.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
