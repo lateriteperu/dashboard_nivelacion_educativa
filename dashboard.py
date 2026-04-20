@@ -37,10 +37,6 @@ def load_data():
         
         # ... (aquí va tu column_map y el rename que ya tienes) ...
         df = df.rename(columns=column_map)
-
-        # --- LÍNEA PARA CAMBIAR EL NOMBRE DE LA SESIÓN ---
-        # Reemplazamos "Sesión de Reforzamiento" por "Sesión regular" en la columna Sesion
-        df['Sesion'] = df['Sesion'].replace('Sesión de Reforzamiento', 'Sesión regular')
         
         column_map = {
             'q8_fecha_clase': 'Date',
@@ -66,6 +62,9 @@ def load_data():
             #'pct_alto_rendimiento': 'Pct_Alto_Rendimiento',
             #'pct_riesgo': 'Pct_Riesgo'
         }
+
+        # Reemplazamos "Sesión de Reforzamiento" por "Sesión regular" en la columna Sesion
+        df['Sesion'] = df['Sesion'].replace('Sesión de Reforzamiento', 'Sesión regular')
         
         df = df.rename(columns=column_map)
         df['Date'] = pd.to_datetime(df['Date'], format='%d%b%Y', errors='coerce')
