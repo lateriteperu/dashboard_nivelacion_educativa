@@ -131,8 +131,8 @@ if df_raw is not None:
             # Métricas
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Número de sesiones", num_sesiones, help="Número de clases dictadas. Se imparte una sesión diariamente de lunes a sábado.")
-            m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
-            m3.metric("Promedio de Estudiantes asistentes", f"{prom_niños:.1f} alum.", help="Promedio de estudiantes asistentes")
+            m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f}", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
+            m3.metric("Promedio de Estudiantes asistentes", f"{prom_niños:.1f}", help="Promedio de estudiantes asistentes")
             m4.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%", help="Porcentaje de estudiantes asistentes respecto al total de inscritos.")
 
             st.markdown("---")
@@ -146,7 +146,7 @@ if df_raw is not None:
 
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
             st.markdown("---")
-            st.subheader("📈 Análisis de Tendencia (Media móvil de 3 sesiones)")
+            st.subheader("📈 Análisis de Tendencia de Asistencia Diaria")
 
             if not df_filtered.empty:
         # 1. Crear el DataFrame base según la selección
@@ -183,7 +183,7 @@ if df_raw is not None:
                    y='Media_Movil', 
                    color='Institucion',
                    line_shape='spline',
-                   title="Tendencia de Asistencia: Comparativa",
+                   title="Porcentaje de estudiantes asistentes (Media móvil de 3 sesiones)",
                    labels={'Media_Movil': 'Asistencia (%)', 'Date': 'Fecha'},
                    color_discrete_map={'PROMEDIO GENERAL': '#333333'} 
 
@@ -198,9 +198,9 @@ if df_raw is not None:
             fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
             st.plotly_chart(fig_comparativo, use_container_width=True)
  
-            st.info("💡 **¿Cómo interpretar este gráfico?:** La línea representa la tendencia suavizada. El promedio general aparece resaltado en color oscuro.")
+            st.info("💡 **¿Cómo interpretar este gráfico?:** Las líneas representa tendencias suavizadas obtenidas a partir del promedio de los porcentajes de asistencia de las última tres sesiones. El promedio general aparece en línes punteadas oscuras.")
 
-        with st.expander("📂 Ver datos de asistencia (Raw Data)"):
+        with st.expander("📂 Ver datos detallados de asistencia"):
                 df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
                 df_tabla_asist['Date'] = df_tabla_asist['Date'].dt.strftime('%d-%m-%Y')
                 st.dataframe(df_tabla_asist.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
@@ -258,7 +258,7 @@ if df_raw is not None:
             st.markdown("---")
 
             # 4. Gráfico de Barras (Niveles sobre Asistentes)
-            st.subheader("📊 Distribución de Niveles de Resultado en el Exit Ticket")
+            st.subheader("📊 Distribución de Niveles de Resultado en el Exit Ticket ")
             df_counts = df_filtered.groupby('Date')[['Logro', 'Proceso', 'Inicio']].sum().reset_index()
             df_counts['Total'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
             
@@ -268,13 +268,13 @@ if df_raw is not None:
             df_melt = df_counts.melt(id_vars='Date', value_vars=['Logro', 'Proceso', 'Inicio'], var_name='Nivel', value_name='Porcentaje')
             
             fig_barras = px.bar(
-                df_melt, x='Date', y='Porcentaje', color='Nivel', barmode='stack', text_auto='.1f',
+                df_melt, x='Date', y='Porcentaje', color='Nivel', barmode='stack', text_auto='.1f', title='Porcentaje de estudiantes asistentes por nivel de resultado en el Exit Ticket (%)'
                 color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'}
             )
             fig_barras.update_layout(yaxis_range=[0, 105])
             st.plotly_chart(fig_barras, use_container_width=True)
 
-            st.info("""💡 **Guía de Interpretación:** La barra representa el 100% de los asistentes. Logro (≥80%), Proceso (50-79%), Inicio (<50%).""")
+            st.info("""💡 **Guía de Interpretación:** La barra representa el 100% de los asistentes. Logro (≥80% de respuestas correctas), Proceso (50-79% de respuestas correctas), Inicio (<50% de respuestas correctas).""")
 
             st.markdown("---")
 
