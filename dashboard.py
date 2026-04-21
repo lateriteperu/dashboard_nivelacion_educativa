@@ -245,7 +245,7 @@ if df_raw is not None:
             st.markdown("---")
 
             # 3. Gráfico de Líneas (Puntaje)
-            st.subheader("🌟 Evolución de Respuestas Correctas")
+            st.subheader("🌟 Evolución de Respuestas Correctas en el Exit Ticket (%)")
             df_notas = df_filtered.groupby(['Date', 'Grado'])['Pct_Puntaje'].mean().reset_index()
             # Corrección de escala para el gráfico
             df_notas['Pct_Puntaje'] = df_notas['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
@@ -257,7 +257,7 @@ if df_raw is not None:
             st.markdown("---")
 
             # 4. Gráfico de Barras (Niveles sobre Asistentes)
-            st.subheader("📊 Distribución de Niveles (Solo Asistentes)")
+            st.subheader("📊 Distribución de Niveles de Resultado en el Exit Ticket")
             df_counts = df_filtered.groupby('Date')[['Logro', 'Proceso', 'Inicio']].sum().reset_index()
             df_counts['Total'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
             
