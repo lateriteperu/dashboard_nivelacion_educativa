@@ -129,7 +129,7 @@ if df_raw is not None:
             prom_niños = total_asistentes / num_sesiones if num_sesiones > 0 else 0
             
             # Métricas
-            m1, m2, m3, m4, m5 = st.columns(5)
+            m1, m2, m3, m4 = st.columns(4)
             m1.metric("Número de sesiones", num_sesiones, help="Número de clases dictadas. Se imparte una sesión diariamente de lunes a sábado.")
             m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
             m3.metric("Promedio de Estudiantes asistentes", f"{prom_niños:.1f} alum.", help="Promedio de estudiantes asistentes")
