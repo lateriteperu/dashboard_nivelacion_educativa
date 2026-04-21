@@ -119,32 +119,21 @@ if df_raw is not None:
     with tab1:
         st.header("📅 Resumen de Asistencia")
         if not df_filtered.empty:
-            # 1. Sesiones únicas
+            # Cálculos
             df_sesiones_unicas = df_filtered.groupby(['Date', 'Institucion', 'Sesion'])['Horas'].first().reset_index()
             num_sesiones = len(df_sesiones_unicas)
             horas_totales = df_sesiones_unicas['Horas'].sum()
-
-            # 2. Estudiantes Registrados 
-            # Agrupamos por Institucion y Grado y tomamos el valor máximo de alumnos de ese grupo
-            estudiantes_por_grupo = df_filtered.groupby(['Institucion', 'Grado'])['Alumnos'].max().reset_index()
-            total_inscritos_reales = estudiantes_por_grupo['Alumnos'].sum()
-
-            # 3. Asistencia y Promedios
-            total_asistentes_acumulados = df_filtered['Asistencia_Absoluta'].sum()
-            # El total de inscritos potenciales es el real multiplicado por el número de sesiones
-            inscritos_potenciales_total = (df_filtered['Alumnos']).sum() 
+            total_asistentes = df_filtered['Asistencia_Absoluta'].sum()
+            total_inscritos = df_filtered['Alumnos'].sum()
+            asistencia_global = (total_asistentes / total_inscritos * 100) if total_inscritos > 0 else 0
+            prom_niños = total_asistentes / num_sesiones if num_sesiones > 0 else 0
             
-            asistencia_global = (total_asistentes_acumulados / inscritos_potenciales_total * 100) if inscritos_potenciales_total > 0 else 0
-            prom_niños = total_asistentes_acumulados / num_sesiones if num_sesiones > 0 else 0
-            
-            # --- MÉTRICAS ---
+            # Métricas
             m1, m2, m3, m4, m5 = st.columns(5)
-            m1.metric("Número de sesiones", num_sesiones, help="Número de clases dictadas.")
-            m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h", help="Duración acumulada de las sesiones.")
-            m3.metric("Estudiantes registrados", f"{total_inscritos_reales:.0f} alum.", 
-                      help="Total de estudiantes únicos registrados en el programa (basado en el máximo por grado/institución).")
-            m4.metric("Promedio asistentes", f"{prom_niños:.1f} alum.", help="Promedio de estudiantes presentes por sesión.")
-            m5.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%", help="Relación entre asistencias reales y capacidad total.")
+            m1.metric("Número de sesiones", num_sesiones, help="Número de clases dictadas. Se imparte una sesión diariamente de lunes a sábado.")
+            m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
+            m3.metric("Promedio de Estudiantes asistentes", f"{prom_niños:.1f} alum.", help="Promedio de estudiantes asistentes")
+            m4.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%", help="Porcentaje de estudiantes asistentes respecto al total de inscritos.")
 
             st.markdown("---")
             st.subheader("👥 Tendencia Diaria de Asistencia")
@@ -252,7 +241,7 @@ if df_raw is not None:
             
             m3.metric("Puntaje Promedio", f"{promedio_puntaje_real:.1f}%", help="Porcentaje del exit ticket completado correctamente. Cada exit ticket tiene como máximo 5 preguntas.")
             
-            m4.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%", help="Un estudiante alcanza el nivel de logro cuando responde correctamente el 80% o más del exit ticket. Por ejemplo, si la evaluación tiene 5 preguntas en total, el estudiante debe responder 4 o más para ser considerado en el nivel logro.")
+            m4.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%", help="Un estudiante alcanza el nivel de logro cuando responde correctamente el 80% o más del exit ticket. Por ejemplo, si la evaluación tiene 5 preguntas en total, el estudiante debe responder 4 o más para ser considerado en ese nivel.")
 
             st.markdown("---")
 
