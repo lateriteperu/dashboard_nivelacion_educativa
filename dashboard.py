@@ -129,20 +129,22 @@ if df_raw is not None:
             prom_niños = total_asistentes / num_sesiones if num_sesiones > 0 else 0
             
             # Métricas
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Número de sesiones", num_sesiones)
-            m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h")
-            m3.metric("Promedio asistencia", f"{prom_niños:.1f} alum.")
-            m4.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%")
+            m1, m2, m3, m4, m5 = st.columns(5)
+            m1.metric("Número de sesiones", num_sesiones, help="Número de clases dictadas. Se imparte una sesión diariamente de lunes a sábado.")
+            m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f} h", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
+            m3.metric("Estudiantes registrados", f"{total_inscritos:.1f} alum.", help="Total de estudiantes registrados en las listas de clase brindadas por las instituciones educativas")
+            m4.metric("Promedio de Estudiantes asistentes", f"{prom_niños:.1f} alum.", help="Promedio de estudiantes asistentes")
+            m5.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%", help="Porcentaje de estudiantes asistentes respecto al total de inscritos.")
 
             st.markdown("---")
             st.subheader("👥 Tendencia Diaria de Asistencia")
             df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado'])['Pct_Asistencia'].mean().reset_index()
-            fig_asist = px.bar(df_asistencia_diaria, x='Date', y='Pct_Asistencia', color='Grado', barmode='group', text_auto='.1f')
+            fig_asist = px.bar(df_asistencia_diaria, x='Date', y='Pct_Asistencia', color='Grado', barmode='group', text_auto='.1f', title="Porcentaje de estudiantes asistentes (%)") # Título del gráfico)
             fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)")
             st.plotly_chart(fig_asist, use_container_width=True)
 
-            
+            st.info("💡 **¿Cómo interpretar este gráfico?:** Cada barra representa el porcentaje de estudiantes asistentes respecto del total registrado en las listas de clase.")
+
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
             st.markdown("---")
             st.subheader("📈 Análisis de Tendencia (Media móvil de 3 sesiones)")
@@ -197,7 +199,7 @@ if df_raw is not None:
             fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
             st.plotly_chart(fig_comparativo, use_container_width=True)
  
-            st.info("💡 **Interpretación:** La línea representa la tendencia suavizada. El promedio general aparece resaltado en color oscuro.")
+            st.info("💡 **¿Cómo interpretar este gráfico?:** La línea representa la tendencia suavizada. El promedio general aparece resaltado en color oscuro.")
 
         with st.expander("📂 Ver datos de asistencia (Raw Data)"):
                 df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
@@ -232,15 +234,15 @@ if df_raw is not None:
             # --- 2. Render de Métricas (Ahora con 4 columnas) ---
             m1, m2, m3, m4 = st.columns(4)
             
-            m1.metric("Sesiones con Evaluación", f"{numero_aplicados}")
+            m1.metric("Sesiones con Evaluación", f"{numero_aplicados}", help="Cada sesión es culminada con una evaluación de salida (exit ticket)")
             
             # La nueva métrica conectada a la anterior
             m2.metric("Sesiones con Evaluación (%)", f"{pct_aplicacion:.1f}%", 
                       help="Porcentaje de sesiones realizadas que cuentan con un Exit Ticket registrado.")
             
-            m3.metric("Puntaje Promedio", f"{promedio_puntaje_real:.1f}%")
+            m3.metric("Puntaje Promedio", f"{promedio_puntaje_real:.1f}%", help="Porcentaje del exit ticket completado correctamente. Cada exit ticket tiene como máximo 5 preguntas.")
             
-            m4.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%")
+            m4.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%", help="Un estudiante alcanza el nivel de logro cuando responde correctamente el 80% o más del exit ticket. Por ejemplo, si la evaluación tiene 5 preguntas en total, el estudiante debe responder 4 o más para ser considerado en el nivel logro.")
 
             st.markdown("---")
 
