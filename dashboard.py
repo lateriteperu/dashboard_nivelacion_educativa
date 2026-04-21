@@ -185,19 +185,19 @@ if df_raw is not None:
                    title="Tendencia de Asistencia: Comparativa",
                    labels={'Media_Movil': 'Asistencia (%)', 'Date': 'Fecha'},
                    color_discrete_map={'PROMEDIO GENERAL': '#333333'} 
+
     )
 
-             # 5. Estilo especial para la línea de promedio (si existe)
             if 'PROMEDIO GENERAL' in df_final['Institucion'].values:
-               fig_comparativo.update_traces(
-               patch={"line": {"width": 5, "dash": 'dot'}}, 
-               selector={'name': 'PROMEDIO GENERAL'}
-        )
-    
-               fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
-               st.plotly_chart(fig_comparativo, use_container_width=True)
+                    fig_comparativo.update_traces(
+                        patch={"line": {"width": 5, "dash": 'dot'}}, 
+                        selector={'name': 'PROMEDIO GENERAL'}
+                    )
+                
+            fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
+            st.plotly_chart(fig_comparativo, use_container_width=True)
  
-               st.info("💡 **Interpretación:** La línea representa la tendencia suavizada. El promedio general aparece resaltado en color oscuro.")
+            st.info("💡 **Interpretación:** La línea representa la tendencia suavizada. El promedio general aparece resaltado en color oscuro.")
 
         with st.expander("📂 Ver datos de asistencia (Raw Data)"):
                 df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
