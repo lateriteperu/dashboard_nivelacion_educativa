@@ -268,7 +268,7 @@ if df_raw is not None:
             df_melt = df_counts.melt(id_vars='Date', value_vars=['Logro', 'Proceso', 'Inicio'], var_name='Nivel', value_name='Porcentaje')
             
             fig_barras = px.bar(
-                df_melt, x='Date', y='Porcentaje', color='Nivel', barmode='stack', text_auto='.1f', title='Porcentaje de estudiantes asistentes por nivel de resultado en el Exit Ticket (%)'
+                df_melt, x='Date', y='Porcentaje', color='Nivel', barmode='stack', text_auto='.1f', title="Porcentaje de estudiantes asistentes por nivel de resultado en el Exit Ticket (%)",
                 color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'}
             )
             fig_barras.update_layout(yaxis_range=[0, 105])
