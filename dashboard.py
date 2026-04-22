@@ -121,10 +121,10 @@ if df_raw is not None:
         st.subheader("📋 Metas de Asistencia Diaria a Sesiones Regulares")
      # 1. Creamos los datos manualmente 
         data_metas = {
-    "LUNES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 4to A (23)", "Camisea 4to (36)", "Segakiato 4to y 5to (15)", "**Total: 103**"],
-    "MARTES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 4to B (22)", "Camisea 5to (35)", "Segakiato 4to y 5to (15)", "**Total: 95**"],
-    "JUEVES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 5to A (22)", "Camisea 4to (36)", "Segakiato 4to y 5to (15)", "**Total: 102**"],
-    "VIERNES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 5to B (21)", "Camisea 5to (35)", "Segakiato 4to y 5to (15)", "**Total: 94**"]
+    "LUNES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 4to A (23)", "Camisea - 4to (36)", "Segakiato - 4to y 5to (15)", "**Total: 103**"],
+    "MARTES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 4to B (22)", "Camisea - 5to (35)", "Segakiato - 4to y 5to (15)", "**Total: 95**"],
+    "JUEVES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 5to A (22)", "Camisea - 4to (36)", "Segakiato - 4to y 5to (15)", "**Total: 102**"],
+    "VIERNES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 5to B (21)", "Camisea - 5to (35)", "Segakiato - 4to y 5to (15)", "**Total: 94**"]
 }
 
         df_estatico = pd.DataFrame(data_metas)
