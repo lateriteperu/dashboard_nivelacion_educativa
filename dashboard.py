@@ -207,7 +207,7 @@ if df_raw is not None:
 
                 st.plotly_chart(fig_total_asist, use_container_width=True)
                 
-                st.info("💡 **Interpretación:** El número sobre cada barra indica el total global de asistentes del día. Los números internos muestran el aporte de cada institución.")
+                st.info("💡 **Interpretación:** El número sobre cada barra indica el total global de asistentes del día. Los números internos muestran el aporte de cada institución. El número total de estudiantes registrados en todos los colegios hasta el 22/04/2026 es de 226 estudiantes. No obstante, de acuerdo al horario, el día lunes y jueves asiste solo 4to de secundaria, mientras que martes y viernes, solo 5to. Hay excepciones como el colegio de Segakiato en el cual se invita a 4to y 5to todos los días. En el caso de Kirigueti, debido a la afluencia de estudiantes, el lunes se enseña a 4to A, martes a 4toB, jueves a 5to A y viernes a 5to. Los días miércoles y sábados se realizan las clases de consolidación (reforzamiento adicional) dirigida a los estudiantes que requieren más apoyo en ambos grados (4to y 5to).")
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
             st.markdown("---")
             st.subheader("📈 Análisis de Tendencia de Asistencia Diaria")
