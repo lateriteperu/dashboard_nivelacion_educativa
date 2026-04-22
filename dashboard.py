@@ -117,7 +117,7 @@ if df_raw is not None:
 
     # --- TAB 1: ASISTENCIA ---
     with tab1:
-        st.header("📅 Resumen de Asistencia")
+        st.header("📅 Resumen de Asistencia por Sesión")
         if not df_filtered.empty:
             # Cálculos
             df_sesiones_unicas = df_filtered.groupby(['Date', 'Institucion', 'Sesion'])['Horas'].first().reset_index()
@@ -131,12 +131,12 @@ if df_raw is not None:
             # Métricas
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Número de sesiones", num_sesiones, help="Número de clases dictadas. Se imparte una sesión diariamente de lunes a sábado.")
-            m2.metric("Horas efectivas ⏱️", f"{horas_totales:.1f}", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
+            m2.metric("Total de horas efectivas de clase", f"{horas_totales:.1f}", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
             m3.metric("Promedio de Estudiantes asistentes", f"{prom_niños:.1f}", help="Promedio de estudiantes asistentes")
-            m4.metric("Asistencia Global (%)", f"{asistencia_global:.1f}%", help="Porcentaje de estudiantes asistentes respecto al total de inscritos.")
+            m4.metric("Asistencia Promedio por sesión (%)", f"{asistencia_global:.1f}%", help="Porcentaje de estudiantes asistentes respecto al total de estudiantes que deberían asistir por día.")
 
             st.markdown("---")
-            st.subheader("👥 Tendencia Diaria de Asistencia")
+            st.subheader("👥 Tendencia Diaria de Asistencia por Sesión")
             
             # 1. Agrupamiento corregido
             df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado']).agg({
@@ -164,7 +164,7 @@ if df_raw is not None:
         
             # --- NUEVO GRÁFICO: TOTAL DE ESTUDIANTES ASISTENTES POR DÍA ---
             st.markdown("---")
-            st.subheader("👥 Cantidad Total de Estudiantes Asistentes")
+            st.subheader("👥 Cantidad Total de Estudiantes Asistentes por Sesión")
             
             if not df_filtered.empty:
                 # 1. Agrupamos por Fecha e Institución
@@ -210,7 +210,7 @@ if df_raw is not None:
                 st.info("💡 **Interpretación:** El número sobre cada barra indica el total global de asistentes del día. Los números internos muestran el aporte de cada institución. El número total de estudiantes registrados en todos los colegios hasta el 22/04/2026 es de 226 estudiantes. No obstante, de acuerdo al horario, el día lunes y jueves asiste solo 4to de secundaria, mientras que martes y viernes, solo 5to. Hay excepciones como el colegio de Segakiato en el cual se invita a 4to y 5to todos los días. En el caso de Kirigueti, debido a la afluencia de estudiantes, el lunes se enseña a 4to A, martes a 4toB, jueves a 5to A y viernes a 5to B. Los días miércoles y sábados se realizan las clases de consolidación (reforzamiento adicional) dirigida a los estudiantes que requieren más apoyo en ambos grados (4to y 5to).")
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
             st.markdown("---")
-            st.subheader("📈 Análisis de Tendencia de Asistencia Diaria")
+            st.subheader("📈 Análisis de Tendencia de Asistencia Diaria ")
 
             if not df_filtered.empty:
         # 1. Crear el DataFrame base según la selección
