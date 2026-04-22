@@ -137,13 +137,29 @@ if df_raw is not None:
 
             st.markdown("---")
             st.subheader("👥 Tendencia Diaria de Asistencia")
-            df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado'])['Pct_Asistencia'].mean().reset_index()
-            fig_asist = px.bar(df_asistencia_diaria, x='Date', y='Pct_Asistencia', color='Grado', barmode='group', text_auto='.1f', title="Porcentaje de estudiantes asistentes (%)", hover_data=['Asistencia_Absoluta', 'Alumnos'],
-            labels={'Asistencia_Absoluta': 'Asistentes Reales', 'Alumnos': 'Total Inscritos'}
-            )
+            
+            # 1. Agrupamiento corregido
+            df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado']).agg({
+                'Pct_Asistencia': 'mean', 
+                'Asistencia_Absoluta': 'sum', 
+                'Alumnos': 'sum'
+            }).reset_index()
+            
+            # 2. Gráfico con paréntesis al final de los argumentos
+            fig_asist = px.bar(
+                df_asistencia_diaria, 
+                x='Date', 
+                y='Pct_Asistencia', 
+                color='Grado', 
+                barmode='group', 
+                text_auto='.1f', 
+                title="Porcentaje de estudiantes asistentes (%)",
+                hover_data=['Asistencia_Absoluta', 'Alumnos'],
+                labels={'Asistencia_Absoluta': 'Asistentes Reales', 'Alumnos': 'Total Inscritos'} 
+            ) # <--- Asegúrate de que este paréntesis cierre AQUÍ y no antes.
+            
             fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)")
             st.plotly_chart(fig_asist, use_container_width=True)
-
             st.info("💡 **¿Cómo interpretar este gráfico?:** Cada barra representa el porcentaje de estudiantes asistentes respecto del total registrado en las listas de clase.")
 
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
