@@ -161,6 +161,38 @@ if df_raw is not None:
             fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)")
             st.plotly_chart(fig_asist, use_container_width=True)
             st.info("💡 **¿Cómo interpretar este gráfico?:** Cada barra representa el porcentaje de estudiantes asistentes respecto del total registrado en las listas de clase.")
+        
+            # --- NUEVO GRÁFICO: TOTAL DE ESTUDIANTES ASISTENTES POR DÍA ---
+            st.markdown("---")
+            st.subheader("👥 Cantidad Total de Estudiantes Asistentes")
+            
+            if not df_filtered.empty:
+                # 1. Agrupamos por Fecha e Institución para ver la contribución de cada colegio
+                df_asistencia_total = df_filtered.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
+                
+                # 2. Creamos el gráfico de barras apiladas (stack)
+                fig_total_asist = px.bar(
+                    df_asistencia_total,
+                    x='Date',
+                    y='Asistencia_Absoluta',
+                    color='Institucion', # Los colores ahora representan a los colegios
+                    title="Número Total de Estudiantes en Clase (Suma de Instituciones)",
+                    labels={'Asistencia_Absoluta': 'Número de Estudiantes', 'Date': 'Fecha'},
+                    text_auto=True, # Muestra el número dentro de cada segmento de la barra
+                    barmode='stack' # Apila los colegios para ver el total por día
+                )
+
+                # 3. Configuración estética
+                fig_total_asist.update_layout(
+                    xaxis_title="Fecha",
+                    yaxis_title="Cantidad de Estudiantes",
+                    legend_title="Institución",
+                    hovermode="x unified" # Al pasar el mouse, muestra el total de todos los colegios de ese día
+                )
+
+                st.plotly_chart(fig_total_asist, use_container_width=True)
+                
+                st.info("💡 **Interpretación:** La altura total de la barra representa cuántos alumnos hubo en total ese día. Cada color indica cuántos aportó cada colegio.")
 
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
             st.markdown("---")
