@@ -118,7 +118,7 @@ if df_raw is not None:
     # --- TAB 1: ASISTENCIA ---
     with tab1:
     # --- SECCIÓN: CRONOGRAMA Y METAS DE ASISTENCIA (ESTÁTICA) --
-        st.subheader("📋 Metas de Asistencia Diaria a Sesiones Regulares")
+        st.header("📋 Metas de Asistencia Diaria a Sesiones Regulares")
      # 1. Creamos los datos manualmente 
         data_metas = {
     "LUNES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 4to A (23)", "Camisea - 4to (36)", "Segakiato - 4to y 5to (15)", "**Total: 103**"],
