@@ -117,6 +117,20 @@ if df_raw is not None:
 
     # --- TAB 1: ASISTENCIA ---
     with tab1:
+    # --- SECCIÓN: CRONOGRAMA Y METAS DE ASISTENCIA (ESTÁTICA) --
+        st.subheader("📋 Metas de Asistencia Diaria a Sesiones Regulares")
+     # 1. Creamos los datos manualmente 
+        data_metas = {
+    "LUNES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 4to A (23)", "Camisea 4to (36)", "Segakiato 4to y 5to (15)", "**Total: 103**"],
+    "MARTES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 4to B (22)", "Camisea 5to (35)", "Segakiato 4to y 5to (15)", "**Total: 95**"],
+    "JUEVES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 5to A (22)", "Camisea 4to (36)", "Segakiato 4to y 5to (15)", "**Total: 102**"],
+    "VIERNES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 5to B (21)", "Camisea 5to (35)", "Segakiato 4to y 5to (15)", "**Total: 94**"]
+}
+
+        df_estatico = pd.DataFrame(data_metas)
+        st.table(df_estatico)
+        st.caption("Nota: Esta tabla muestra el número de estudiantes esperados diariamente. El número total de estudiantes registrados en todos los colegios hasta el 22/04/2026 es de 226 estudiantes. No obstante, de acuerdo al horario del proyecto de nivelación, el día lunes y jueves asiste solo 4to de secundaria, mientras que, martes y viernes, solo 5to. Hay excepciones como el colegio de Segakiato en el que hay pocos alumnos por lo cual se invita a ambos grados todos los días. En el caso de Kirigueti, debido a la afluencia de estudiantes, el lunes se enseña a 4to A, martes a 4to B, jueves a 5to A y viernes a 5to B. Los días miércoles y sábados se realizan las clases de consolidación (reforzamiento adicional) dirigida a los estudiantes que los profesores han identificado que requieren más apoyo en ambos grados (4to y 5to). ")
+
         st.header("📅 Resumen de Asistencia por Sesión")
         if not df_filtered.empty:
             # Cálculos
@@ -131,8 +145,8 @@ if df_raw is not None:
             # Métricas
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Número de sesiones", num_sesiones, help="Número de clases dictadas. Se imparte una sesión diariamente de lunes a sábado.")
-            m2.metric("Total de horas efectivas de clase", f"{horas_totales:.1f}", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
-            m3.metric("Promedio de Estudiantes asistentes", f"{prom_niños:.1f}", help="Promedio de estudiantes asistentes")
+            m2.metric("Horas efectivas clase", f"{horas_totales:.1f}", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
+            m3.metric("Prom.Estudiantes asistentes", f"{prom_niños:.1f}", help="Promedio de estudiantes asistentes")
             m4.metric("Asistencia Promedio por sesión (%)", f"{asistencia_global:.1f}%", help="Porcentaje de estudiantes asistentes respecto al total de estudiantes que deberían asistir por día.")
 
             st.markdown("---")
@@ -207,7 +221,7 @@ if df_raw is not None:
 
                 st.plotly_chart(fig_total_asist, use_container_width=True)
                 
-                st.info("💡 **Interpretación:** El número sobre cada barra indica el total global de asistentes del día. Los números internos muestran el aporte de cada institución. El número total de estudiantes registrados en todos los colegios hasta el 22/04/2026 es de 226 estudiantes. No obstante, de acuerdo al horario, el día lunes y jueves asiste solo 4to de secundaria, mientras que martes y viernes, solo 5to. Hay excepciones como el colegio de Segakiato en el cual se invita a 4to y 5to todos los días. En el caso de Kirigueti, debido a la afluencia de estudiantes, el lunes se enseña a 4to A, martes a 4toB, jueves a 5to A y viernes a 5to B. Los días miércoles y sábados se realizan las clases de consolidación (reforzamiento adicional) dirigida a los estudiantes que requieren más apoyo en ambos grados (4to y 5to).")
+                st.info("💡 **Interpretación:** El número sobre cada barra indica el total global de asistentes del día. Los números internos muestran el aporte de cada institución.")
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
             st.markdown("---")
             st.subheader("📈 Análisis de Tendencia de Asistencia Diaria ")
