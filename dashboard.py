@@ -167,33 +167,47 @@ if df_raw is not None:
             st.subheader("👥 Cantidad Total de Estudiantes Asistentes")
             
             if not df_filtered.empty:
-                # 1. Agrupamos por Fecha e Institución para ver la contribución de cada colegio
+                # 1. Agrupamos por Fecha e Institución
                 df_asistencia_total = df_filtered.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
                 
-                # 2. Creamos el gráfico de barras apiladas (stack)
+                # 2. Calculamos el total por día para las etiquetas superiores
+                df_sumas_diarias = df_asistencia_total.groupby('Date')['Asistencia_Absoluta'].sum().reset_index()
+                
+                # 3. Creamos el gráfico base
                 fig_total_asist = px.bar(
                     df_asistencia_total,
                     x='Date',
                     y='Asistencia_Absoluta',
-                    color='Institucion', # Los colores ahora representan a los colegios
-                    title="Número Total de Estudiantes en Clase ",
+                    color='Institucion',
+                    title="Número Total de Estudiantes en Clase",
                     labels={'Asistencia_Absoluta': 'Número de Estudiantes', 'Date': 'Fecha'},
-                    text_auto=True, # Muestra el número dentro de cada segmento de la barra
-                    barmode='stack' # Apila los colegios para ver el total por día
+                    text_auto=True, 
+                    barmode='stack'
                 )
 
-                # 3. Configuración estética
+                # 4. AGREGAMOS LAS ETIQUETAS DEL TOTAL ENCIMA DE LAS BARRAS
+                fig_total_asist.add_scatter(
+                    x=df_sumas_diarias['Date'],
+                    y=df_sumas_diarias['Asistencia_Absoluta'],
+                    mode='text',
+                    text=df_sumas_diarias['Asistencia_Absoluta'],
+                    textposition='top center',
+                    showlegend=False,
+                    hoverinfo='skip' # Para que no interfiera con el hover de las barras
+                )
+
+                # 5. Configuración estética
                 fig_total_asist.update_layout(
                     xaxis_title="Fecha",
                     yaxis_title="Cantidad de Estudiantes",
                     legend_title="Institución",
-                    hovermode="x unified" # Al pasar el mouse, muestra el total de todos los colegios de ese día
+                    hovermode="x unified",
+                    yaxis_range=[0, df_sumas_diarias['Asistencia_Absoluta'].max() * 1.15] # Espacio extra para que el texto no se corte
                 )
 
                 st.plotly_chart(fig_total_asist, use_container_width=True)
                 
-                st.info("💡 **Interpretación:** La altura total de la barra representa cuántos alumnos hubo en total ese día. Cada color indica cuántos aportó cada colegio.")
-
+                st.info("💡 **Interpretación:** El número sobre cada barra indica el total global de asistentes del día. Los números internos muestran el aporte de cada institución.")
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
             st.markdown("---")
             st.subheader("📈 Análisis de Tendencia de Asistencia Diaria")
