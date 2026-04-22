@@ -176,7 +176,7 @@ if df_raw is not None:
                     x='Date',
                     y='Asistencia_Absoluta',
                     color='Institucion', # Los colores ahora representan a los colegios
-                    title="Número Total de Estudiantes en Clase (Suma de Instituciones)",
+                    title="Número Total de Estudiantes en Clase ",
                     labels={'Asistencia_Absoluta': 'Número de Estudiantes', 'Date': 'Fecha'},
                     text_auto=True, # Muestra el número dentro de cada segmento de la barra
                     barmode='stack' # Apila los colegios para ver el total por día
