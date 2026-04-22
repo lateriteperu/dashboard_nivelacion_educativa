@@ -252,7 +252,8 @@ if df_raw is not None:
             df_notas['Pct_Puntaje'] = df_notas['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
             
             fig_linea = px.line(df_notas, x='Date', y='Pct_Puntaje', color='Grado', markers=True)
-            fig_linea.update_layout(yaxis_range=[0, 105], yaxis_title="Puntaje (%)")
+            fig_linea.update_traces(connectgaps=True)
+            fig_linea.update_layout(yaxis_range=[0, 105], yaxis_title="Puntaje (%)",title="Puntaje Promedio del Exit Ticket (%)")
             st.plotly_chart(fig_linea, use_container_width=True)
 
             st.markdown("---")
