@@ -139,7 +139,8 @@ if df_raw is not None:
             st.subheader("👥 Tendencia Diaria de Asistencia")
             df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado'])['Pct_Asistencia'].mean().reset_index()
             fig_asist = px.bar(df_asistencia_diaria, x='Date', y='Pct_Asistencia', color='Grado', barmode='group', text_auto='.1f', title="Porcentaje de estudiantes asistentes (%)", hover_data=['Asistencia_Absoluta', 'Alumnos'],
-            labels={'Asistencia_Absoluta': 'Asistentes Reales', 'Alumnos': 'Total Inscritos'})
+            labels={'Asistencia_Absoluta': 'Asistentes Reales', 'Alumnos': 'Total Inscritos'}
+            )
             fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)")
             st.plotly_chart(fig_asist, use_container_width=True)
 
