@@ -30,41 +30,75 @@ if not check_password():
     st.stop()
 
 # @st.cache_data
+@st.cache_data
 def load_data():
     try:
-        # Cargamos los archivos por separado
+        # 1. Carga de archivos
         df_clases = pd.read_csv('plus_petrol_2026_pii_grupal.csv')
         df_talleres = pd.read_csv('plus_petrol_2026_pii_grupal_talleres.csv')
         
-        # Mapa de columnas común
+        # Mapa de columnas (Basado en tus archivos)
         column_map = {
-            'q8_fecha_clase': 'Date', 'q4_institucion': 'Institucion', 
-            'q5_grado': 'Grado', 'q3_curso': 'Curso', 'asistencia': 'Asistencia_Absoluta',
-            'q7_sesion': 'Sesion', 'pct_asistencia': 'Pct_Asistencia', 'pct_puntaje': 'Pct_Puntaje'
-            # Agrega aquí el resto de tus columnas necesarias
+            'q8_fecha_clase': 'Date', 
+            'q4_institucion': 'Institucion', 
+            'q5_grado': 'Grado', 
+            'q3_curso': 'Curso', 
+            'asistencia': 'Asistencia_Absoluta',
+            'q7_sesion': 'Sesion', 
+            'pct_asistencia': 'Pct_Asistencia', 
+            'pct_puntaje': 'Pct_Puntaje',
+            'duration_h': 'Horas', 
+            'n_alumnos': 'Alumnos',
+            'logro': 'Logro', 
+            'proceso': 'Proceso', 
+            'inicio': 'Inicio',
+            'pct_logro': 'Pct_Logro', 
+            'pct_inicio': 'Pct_Inicio', 
+            'pct_proceso': 'Pct_Proceso'
         }
 
-        # Procesamos CLASES
-        df_clases = df_clases.rename(columns=column_map)
-        df_clases['Date'] = pd.to_datetime(df_clases['Date'], errors='coerce')
-        df_clases = df_clases.dropna(subset=['Date'])
+        def clean_and_process(df):
+            # Limpieza crítica: quitar espacios en los nombres de las columnas del CSV
+            df.columns = df.columns.str.strip()
+            
+            # Renombrar
+            df = df.rename(columns=column_map)
+            
+            # Asegurar que la columna Horas exista (si duration_h falló, ponemos 0)
+            if 'Horas' not in df.columns:
+                df['Horas'] = 0
+            
+            # Procesar fechas
+            df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+            df = df.dropna(subset=['Date'])
+            
+            # Limpiar espacios en los datos de texto
+            text_cols = ['Institucion', 'Grado', 'Curso', 'Sesion']
+            for col in text_cols:
+                if col in df.columns:
+                    df[col] = df[col].astype(str).str.strip()
+            
+            return df
 
-        # Procesamos TALLERES
-        df_talleres = df_talleres.rename(columns=column_map)
-        df_talleres['Date'] = pd.to_datetime(df_talleres['Date'], errors='coerce')
-        df_talleres = df_talleres.dropna(subset=['Date'])
+        df_clases = clean_and_process(df_clases)
+        # Específico para clases acadmicas
+        df_clases['Sesion'] = df_clases['Sesion'].replace(
+            ['Sesión de reforzamiento', 'Sesión de Reforzamiento'], 'Sesión regular'
+        )
+
+        df_talleres = clean_and_process(df_talleres)
         
-        return df_clases, df_talleres # <--- Devolvemos ambos por separado
+        return df_clases, df_talleres
     except Exception as e:
-        st.error(f"Error al cargar los datos: {e}")
+        st.error(f"Error crítico al cargar archivos: {e}")
         return None, None
 
-# Recibimos los dos DataFrames
 df_raw, df_talleres_raw = load_data()
 
 if df_raw is not None:
-    # --- BARRA LATERAL (Filtros basados solo en base académica) ---
+    # --- BARRA LATERAL ---
     st.sidebar.header("Filtros del Dashboard")
+    # Los filtros solo se alimentan de la base de CLASES (Académica)
     sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_raw['Institucion'].unique().tolist()))
     sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_raw['Grado'].unique().tolist()))
     sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_raw['Curso'].unique().tolist()))
@@ -73,7 +107,8 @@ if df_raw is not None:
     min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
     sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
-    # --- LÓGICA DE FILTRADO PARA CLASES (Tab 1 y 2) ---
+    # --- LÓGICA DE FILTRADO ---
+    # 1. Filtramos la base Académica (Tab 1 y 2)
     df_filtered = df_raw.copy()
     if sel_inst != 'Todas': df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
     if sel_grado != 'Todos': df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
@@ -82,14 +117,13 @@ if df_raw is not None:
     if len(sel_dates) == 2:
         df_filtered = df_filtered[(df_filtered['Date'].dt.date >= sel_dates[0]) & (df_filtered['Date'].dt.date <= sel_dates[1])]
 
-    # --- LÓGICA DE FILTRADO PARA TALLERES (Tab 3) ---
-    # Solo aplicamos Institución, Grado y Fecha para mantener coherencia
+    # 2. Filtramos la base de Talleres (Tab 3) - Solo por Inst, Grado y Fecha
     df_talleres_filtered = df_talleres_raw.copy()
     if sel_inst != 'Todas': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Institucion'] == sel_inst]
     if sel_grado != 'Todos': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Grado'] == sel_grado]
     if len(sel_dates) == 2:
         df_talleres_filtered = df_talleres_filtered[(df_talleres_filtered['Date'].dt.date >= sel_dates[0]) & (df_talleres_filtered['Date'].dt.date <= sel_dates[1])]
-
+        
     st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
     st.markdown("---")
 
