@@ -32,21 +32,22 @@ if not check_password():
 # @st.cache_data
 # @st.cache_data
 # @st.cache_data
+# @st.cache_data
 def load_data():
     try:
-        # 1. Definir los nombres de los archivos
+        # 1. Nombres exactos según tu captura de pantalla
         file_clases = 'plus_petrol_2026_pii_grupal.csv'
-        file_talleres = 'plus_petrol_2026_talleres.csv' 
+        file_talleres = 'plus_petrol_2026_pii_grupal_talleres.csv' 
         
-        # 2. Cargar ambos archivos
+        # 2. Carga de archivos
         df_clases = pd.read_csv(file_clases)
         df_talleres = pd.read_csv(file_talleres)
         
-        # 3. HACER EL 'APPEND' (Concatenar verticalmente)
-        # Esto es exactamente igual al 'append' de Stata
+        # 3. EL APPEND (Igual al 'append' de Stata)
+        # Combinamos ambos archivos en uno solo
         df = pd.concat([df_clases, df_talleres], ignore_index=True)
         
-        # 4. Mapa de columnas (tu mapa original)
+        # 4. Mapa de columnas
         column_map = {
             'q8_fecha_clase': 'Date',
             'q7_sesion': 'Sesion',
@@ -68,23 +69,18 @@ def load_data():
 
         df = df.rename(columns=column_map)
 
-        # 5. Limpieza de Sesión
+        # 5. Limpieza de Sesión y Formato
         df['Sesion'] = df['Sesion'].astype(str).str.strip() 
         df['Sesion'] = df['Sesion'].replace(['Sesión de reforzamiento', 'Sesión de Reforzamiento'], 'Sesión regular')
         
-        # 6. PROCESAMIENTO DE FECHAS FLEXIBLE (Crucial para que no se borren datos)
-        # Quitamos el formato fijo para que Pandas use su motor de detección automática
+        # 6. Procesamiento de fechas (Flexible)
         df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
-        
-        # Antes de dropear, rellenamos las fechas que pudieran fallar por formato
-        # (Esto es por seguridad para que el append sea visible)
         df = df.dropna(subset=['Date'])
         
-        # 7. Corregimos escalas de porcentajes
+        # 7. Corrección de escala de porcentajes (0-100)
         cols_pct = ['Pct_Asistencia','Pct_Logro','Pct_Inicio','Pct_Proceso','Pct_Puntaje']
         for col in cols_pct:
             if col in df.columns:
-                # Si detectamos que los datos vienen en escala 0-1, los subimos a 0-100
                 if df[col].max() <= 1.0:
                    df[col] = df[col] * 100
         
