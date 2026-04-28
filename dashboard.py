@@ -405,26 +405,52 @@ if df_raw is not None:
                 df_t['Pct_Puntaje'] = df_t['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
                 st.dataframe(df_t.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
 
-       # --- TAB 3: TALLERES ---
+# --- TAB 3: TALLERES ---
     with tab3:
-        st.header("🎨 Monitoreo de Talleres Socioemocionales")
+        st.header("Monitoreo de Talleres Socioemocionales")
         
         # Filtramos específicamente por el curso del segundo archivo
         taller_target = "Taller de Habilidades Socioemocionales"
-        df_final_talleres = df_talleres_filtered[df_talleres_filtered['Curso'].str.contains('Habilidades Socioemocionales', case=False, na=False)]
+        df_final_talleres = df_talleres_filtered[df_talleres_filtered['Curso'].str.contains('Habilidades Socioemocionales', case=False, na=False)].copy()
         
         if not df_final_talleres.empty:
             st.subheader(f"📊 Asistencia: {taller_target}")
             
-            # Gráfico basado EXCLUSIVAMENTE en el archivo de talleres
-            df_asist_plot = df_final_talleres.groupby('Date')['Asistencia_Absoluta'].sum().reset_index()
+            # 1. Agrupamos por Fecha Y Institución para poder diferenciar colores
+            df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
             
+            # 2. Ordenamos cronológicamente
+            df_asist_plot = df_asist_plot.sort_values('Date')
+
+            # 3. Creamos el gráfico usando el parámetro 'color'
             fig_taller = px.bar(
-                df_asist_plot, x='Date', y='Asistencia_Absoluta',
-                text_auto=True, color_discrete_sequence=['#FF4B4B']
+                df_asist_plot, 
+                x='Date', 
+                y='Asistencia_Absoluta',
+                color='Institucion',  # <--- Esto crea la diferencia de colores y la leyenda
+                barmode='group',      # <--- 'group' pone las barras de colegios una al lado de otra
+                text_auto=True,
+                title="Asistencia por Institución y Fecha",
+                # Opcional: puedes usar una paleta predefinida para que los colores sean variados
+                color_discrete_sequence=px.colors.qualitative.Safe 
             )
+
+            # Ajustes de ejes y formato
+            fig_taller.update_xaxes(
+                type='date',
+                tickformat='%d-%b',
+                dtick="D1"
+            )
+            
+            fig_taller.update_layout(
+                xaxis_title="Fecha de Sesión",
+                yaxis_title="Número de Estudiantes",
+                legend_title="Institución",
+                bargap=0.2
+            )
+
             st.plotly_chart(fig_taller, use_container_width=True)
             
-            st.info(f"💡 Datos filtrados por Institución: {sel_inst} y Grado: {sel_grado}")
+            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}")
         else:
             st.warning("No hay registros de talleres para los filtros seleccionados.")
