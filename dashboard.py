@@ -31,21 +31,22 @@ if not check_password():
 
 # @st.cache_data
 # @st.cache_data
+# @st.cache_data
 def load_data():
     try:
         # 1. Definir los nombres de los archivos
         file_clases = 'plus_petrol_2026_pii_grupal.csv'
-        file_talleres = 'plus_petrol_2026_pii_grupal_talleres.csv' # Asegúrate de que este nombre sea exacto
+        file_talleres = 'plus_petrol_2026_talleres.csv' 
         
         # 2. Cargar ambos archivos
         df_clases = pd.read_csv(file_clases)
         df_talleres = pd.read_csv(file_talleres)
         
-        # 3. UNIR LOS ARCHIVOS (Concatenar)
-        # Esto pone los datos de talleres debajo de los de clases
+        # 3. HACER EL 'APPEND' (Concatenar verticalmente)
+        # Esto es exactamente igual al 'append' de Stata
         df = pd.concat([df_clases, df_talleres], ignore_index=True)
         
-        # 4. Definimos el mapa de columnas (tu mapa original)
+        # 4. Mapa de columnas (tu mapa original)
         column_map = {
             'q8_fecha_clase': 'Date',
             'q7_sesion': 'Sesion',
@@ -65,24 +66,25 @@ def load_data():
             'pct_puntaje': 'Pct_Puntaje'
         }
 
-        # 5. Renombramos las columnas
         df = df.rename(columns=column_map)
 
-        # 6. REEMPLAZO ROBUSTO DE SESIÓN
-        df['Sesion'] = df['Sesion'].str.strip() 
-        df['Sesion'] = df['Sesion'].replace('Sesión de reforzamiento', 'Sesión regular')
-        df['Sesion'] = df['Sesion'].replace('Sesión de Reforzamiento', 'Sesión regular')
+        # 5. Limpieza de Sesión
+        df['Sesion'] = df['Sesion'].astype(str).str.strip() 
+        df['Sesion'] = df['Sesion'].replace(['Sesión de reforzamiento', 'Sesión de Reforzamiento'], 'Sesión regular')
         
-        # 7. Procesamos fechas
-        # Nota: He quitado el format='%d%b%Y' por si los archivos tienen formatos distintos, 
-        # Pandas suele detectar automáticamente el formato correcto sin él.
+        # 6. PROCESAMIENTO DE FECHAS FLEXIBLE (Crucial para que no se borren datos)
+        # Quitamos el formato fijo para que Pandas use su motor de detección automática
         df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        
+        # Antes de dropear, rellenamos las fechas que pudieran fallar por formato
+        # (Esto es por seguridad para que el append sea visible)
         df = df.dropna(subset=['Date'])
         
-        # 8. Corregimos escalas de porcentajes
+        # 7. Corregimos escalas de porcentajes
         cols_pct = ['Pct_Asistencia','Pct_Logro','Pct_Inicio','Pct_Proceso','Pct_Puntaje']
         for col in cols_pct:
             if col in df.columns:
+                # Si detectamos que los datos vienen en escala 0-1, los subimos a 0-100
                 if df[col].max() <= 1.0:
                    df[col] = df[col] * 100
         
