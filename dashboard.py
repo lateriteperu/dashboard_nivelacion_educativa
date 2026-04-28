@@ -30,24 +30,11 @@ if not check_password():
     st.stop()
 
 # @st.cache_data
-# @st.cache_data
-# @st.cache_data
-# @st.cache_data
 def load_data():
     try:
-        # 1. Nombres exactos según tu captura de pantalla
-        file_clases = 'plus_petrol_2026_pii_grupal.csv'
-        file_talleres = 'plus_petrol_2026_pii_grupal_talleres.csv' 
+        df = pd.read_csv('plus_petrol_2026_pii_grupal.csv')
         
-        # 2. Carga de archivos
-        df_clases = pd.read_csv(file_clases)
-        df_talleres = pd.read_csv(file_talleres)
-        
-        # 3. EL APPEND (Igual al 'append' de Stata)
-        # Combinamos ambos archivos en uno solo
-        df = pd.concat([df_clases, df_talleres], ignore_index=True)
-        
-        # 4. Mapa de columnas
+        # 1. Definimos el mapa de columnas
         column_map = {
             'q8_fecha_clase': 'Date',
             'q7_sesion': 'Sesion',
@@ -67,20 +54,28 @@ def load_data():
             'pct_puntaje': 'Pct_Puntaje'
         }
 
+        # 2. Renombramos las columnas PRIMERO
         df = df.rename(columns=column_map)
 
-        # 5. Limpieza de Sesión y Formato
-        df['Sesion'] = df['Sesion'].astype(str).str.strip() 
-        df['Sesion'] = df['Sesion'].replace(['Sesión de reforzamiento', 'Sesión de Reforzamiento'], 'Sesión regular')
+        # 2. REEMPLAZO ROBUSTO:
+        # Convertimos a minúsculas, quitamos espacios extra y reemplazamos
+        df['Sesion'] = df['Sesion'].str.strip() # Limpia espacios invisibles
         
-        # 6. Procesamiento de fechas (Flexible)
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        # Usamos un reemplazo directo según lo que veo en tu captura:
+        df['Sesion'] = df['Sesion'].replace('Sesión de reforzamiento', 'Sesión regular')
+        
+        # Por si acaso existiera con la R mayúscula también:
+        df['Sesion'] = df['Sesion'].replace('Sesión de Reforzamiento', 'Sesión regular')
+        
+        # 4. Procesamos fechas
+        df['Date'] = pd.to_datetime(df['Date'], format='%d%b%Y', errors='coerce')
         df = df.dropna(subset=['Date'])
         
-        # 7. Corrección de escala de porcentajes (0-100)
+        # 5. Corregimos escalas de porcentajes
         cols_pct = ['Pct_Asistencia','Pct_Logro','Pct_Inicio','Pct_Proceso','Pct_Puntaje']
         for col in cols_pct:
             if col in df.columns:
+                # Si el valor máximo es <= 1 (ej: 0.8), lo llevamos a escala 100
                 if df[col].max() <= 1.0:
                    df[col] = df[col] * 100
         
