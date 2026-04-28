@@ -440,7 +440,7 @@ if df_raw is not None:
                 'I.E Monseñor Javier Aris Huarte (Kirigueti)': '#FF0000', # Rojo intenso
                 'I.E Carlos Ríos Ríos (Nuevo Mundo)': '#0000FF',         # Azul fuerte
                 'I.E Juan Santos Atahualpa (Camisea)': '#008000',         # Verde
-                'I.E N° 64518 (Segakiato)': "#D87290"                    # Amarillo
+                'I.E N° 64518 (Segakiato)': "#D8DF0B"                    # Amarillo
             }
 
             # 4. Creamos el gráfico con los nuevos colores
@@ -471,6 +471,6 @@ if df_raw is not None:
 
             st.plotly_chart(fig_taller, use_container_width=True)
             
-            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}. Se han aplicado colores intensos para diferenciar las instituciones.")
+            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}.")
         else:
             st.warning("⚠️ No se encontraron registros de talleres para los filtros seleccionados.")
