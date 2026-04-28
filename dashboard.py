@@ -451,7 +451,7 @@ if df_raw is not None:
                 color='Institucion',  # Esto crea la leyenda y la diferencia de colores
                 barmode='group',      # Las barras de colegios del mismo día se ponen una al lado de otra
                 text_auto=True,
-                title="Asistencia por Institución y Fecha",
+                title="Asistencia por institución, grado y fecha",
                 color_discrete_map=colores_intensos # Aplicamos el mapeo de colores intensos
             )
 
