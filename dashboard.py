@@ -123,7 +123,7 @@ if df_raw is not None:
     if sel_grado != 'Todos': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Grado'] == sel_grado]
     if len(sel_dates) == 2:
         df_talleres_filtered = df_talleres_filtered[(df_talleres_filtered['Date'].dt.date >= sel_dates[0]) & (df_talleres_filtered['Date'].dt.date <= sel_dates[1])]
-        
+
     st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
     st.markdown("---")
 
@@ -151,6 +151,7 @@ if df_raw is not None:
 
             st.markdown("---")
             st.subheader("📋 Metas de Asistencia Diaria a Sesiones Regulares")
+            
      # 1. Creamos los datos manualmente 
             data_metas = {
             "LUNES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 4to A (23)", "Camisea - 4to (36)", "Segakiato - 4to y 5to (15)", "**Total: 103**"],
@@ -165,31 +166,56 @@ if df_raw is not None:
             st.markdown("---")
             st.subheader("👥 Tendencia Diaria de Asistencia por Sesión")
             
-            # 1. Agrupamiento corregido
-            df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado']).agg({
-                'Pct_Asistencia': 'mean', 
-                'Asistencia_Absoluta': 'sum', 
-                'Alumnos': 'sum'
-            }).reset_index()
-            
-            # 2. Gráfico con paréntesis al final de los argumentos
-            fig_asist = px.bar(
-                df_asistencia_diaria, 
-                x='Date', 
-                y='Pct_Asistencia', 
-                color='Grado', 
-                barmode='group', 
-                text_auto='.1f', 
-                title="Porcentaje de estudiantes asistentes (%)",
-                hover_data=['Asistencia_Absoluta', 'Alumnos'],
-                labels={'Asistencia_Absoluta': 'Asistentes Reales', 'Alumnos': 'Total Inscritos'} 
-            ) # <--- Asegúrate de que este paréntesis cierre AQUÍ y no antes.
-            
-            fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)")
-            st.plotly_chart(fig_asist, use_container_width=True)
-            st.info("💡 **¿Cómo interpretar este gráfico?:** Cada barra representa el porcentaje de estudiantes asistentes respecto del total registrado en las listas de clase.")
-        
-            # --- NUEVO GRÁFICO: TOTAL DE ESTUDIANTES ASISTENTES POR DÍA ---
+            if not df_filtered.empty:
+                # 1. Agrupamiento y ordenamiento cronológico
+                df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado']).agg({
+                    'Pct_Asistencia': 'mean', 
+                    'Asistencia_Absoluta': 'sum', 
+                    'Alumnos': 'sum'
+                }).reset_index().sort_values('Date')
+                
+                # 2. CORRECCIÓN DE ESCALA (0.75 -> 75)
+                # Si el promedio máximo es menor o igual a 1.1, multiplicamos por 100
+                if df_asistencia_diaria['Pct_Asistencia'].max() <= 1.1:
+                    df_asistencia_diaria['Pct_Asistencia'] = df_asistencia_diaria['Pct_Asistencia'] * 100
+                
+                # 3. Configuración del gráfico
+                fig_asist = px.bar(
+                    df_asistencia_diaria, 
+                    x='Date', 
+                    y='Pct_Asistencia', 
+                    color='Grado', 
+                    barmode='group', 
+                    text_auto='.1f', 
+                    title="Porcentaje de estudiantes asistentes (%)",
+                    hover_data=['Asistencia_Absoluta', 'Alumnos'],
+                    labels={
+                        'Asistencia_Absoluta': 'Asistentes Reales', 
+                        'Alumnos': 'Total Inscritos', 
+                        'Pct_Asistencia': 'Asistencia (%)'
+                    } 
+                )
+                
+                # 4. Ajustes de ejes y espaciado
+                fig_asist.update_xaxes(
+                    type='date', 
+                    tickformat='%d-%b',
+                    dtick="D1" 
+                )
+                
+                fig_asist.update_layout(
+                    yaxis_range=[0, 105], 
+                    yaxis_title="Asistencia (%)",
+                    bargap=0.25,         
+                    bargroupgap=0.1      
+                )
+                
+                st.plotly_chart(fig_asist, use_container_width=True)
+                st.info("💡 **¿Cómo interpretar este gráfico?:** Cada barra representa el porcentaje de estudiantes asistentes respecto del total registrado en las listas de clase.")
+            else:
+                st.warning("No hay datos para graficar con los filtros seleccionados.")
+
+            # --- TOTAL DE ESTUDIANTES ASISTENTES POR DÍA ---
             st.markdown("---")
             st.subheader("👥 Cantidad Total de Estudiantes Asistentes por Sesión")
             
