@@ -32,88 +32,68 @@ if not check_password():
 # @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv('plus_petrol_2026_pii_grupal.csv')
+        # Cargamos los archivos por separado
+        df_clases = pd.read_csv('plus_petrol_2026_pii_grupal.csv')
+        df_talleres = pd.read_csv('plus_petrol_2026_pii_grupal_talleres.csv')
         
-        # 1. Definimos el mapa de columnas
+        # Mapa de columnas común
         column_map = {
-            'q8_fecha_clase': 'Date',
-            'q7_sesion': 'Sesion',
-            'q4_institucion': 'Institucion', 
-            'q5_grado': 'Grado',
-            'q3_curso': 'Curso',
-            'asistencia': 'Asistencia_Absoluta',
-            'duration_h': 'Horas',
-            'n_alumnos': 'Alumnos',
-            'logro': 'Logro',
-            'proceso': 'Proceso',
-            'inicio': 'Inicio',
-            'pct_asistencia': 'Pct_Asistencia',
-            'pct_logro': 'Pct_Logro',
-            'pct_inicio': 'Pct_Inicio',
-            'pct_proceso': 'Pct_Proceso',
-            'pct_puntaje': 'Pct_Puntaje'
+            'q8_fecha_clase': 'Date', 'q4_institucion': 'Institucion', 
+            'q5_grado': 'Grado', 'q3_curso': 'Curso', 'asistencia': 'Asistencia_Absoluta',
+            'q7_sesion': 'Sesion', 'pct_asistencia': 'Pct_Asistencia', 'pct_puntaje': 'Pct_Puntaje'
+            # Agrega aquí el resto de tus columnas necesarias
         }
 
-        # 2. Renombramos las columnas PRIMERO
-        df = df.rename(columns=column_map)
+        # Procesamos CLASES
+        df_clases = df_clases.rename(columns=column_map)
+        df_clases['Date'] = pd.to_datetime(df_clases['Date'], errors='coerce')
+        df_clases = df_clases.dropna(subset=['Date'])
 
-        # 2. REEMPLAZO ROBUSTO:
-        # Convertimos a minúsculas, quitamos espacios extra y reemplazamos
-        df['Sesion'] = df['Sesion'].str.strip() # Limpia espacios invisibles
+        # Procesamos TALLERES
+        df_talleres = df_talleres.rename(columns=column_map)
+        df_talleres['Date'] = pd.to_datetime(df_talleres['Date'], errors='coerce')
+        df_talleres = df_talleres.dropna(subset=['Date'])
         
-        # Usamos un reemplazo directo según lo que veo en tu captura:
-        df['Sesion'] = df['Sesion'].replace('Sesión de reforzamiento', 'Sesión regular')
-        
-        # Por si acaso existiera con la R mayúscula también:
-        df['Sesion'] = df['Sesion'].replace('Sesión de Reforzamiento', 'Sesión regular')
-        
-        # 4. Procesamos fechas
-        df['Date'] = pd.to_datetime(df['Date'], format='%d%b%Y', errors='coerce')
-        df = df.dropna(subset=['Date'])
-        
-        # 5. Corregimos escalas de porcentajes
-        cols_pct = ['Pct_Asistencia','Pct_Logro','Pct_Inicio','Pct_Proceso','Pct_Puntaje']
-        for col in cols_pct:
-            if col in df.columns:
-                # Si el valor máximo es <= 1 (ej: 0.8), lo llevamos a escala 100
-                if df[col].max() <= 1.0:
-                   df[col] = df[col] * 100
-        
-        return df
+        return df_clases, df_talleres # <--- Devolvemos ambos por separado
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
-        return None
-    
-df_raw = load_data()
+        return None, None
+
+# Recibimos los dos DataFrames
+df_raw, df_talleres_raw = load_data()
 
 if df_raw is not None:
-    # --- BARRA LATERAL ---
+    # --- BARRA LATERAL (Filtros basados solo en base académica) ---
     st.sidebar.header("Filtros del Dashboard")
     sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_raw['Institucion'].unique().tolist()))
     sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_raw['Grado'].unique().tolist()))
     sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_raw['Curso'].unique().tolist()))
-    sel_sesion = st.sidebar.selectbox("Seleccionar Tipo de Sesión :", ['Todos'] + sorted(df_raw['Sesion'].unique().tolist()))
+    sel_sesion = st.sidebar.selectbox("Seleccionar Tipo de Sesión:", ['Todos'] + sorted(df_raw['Sesion'].unique().tolist()))
 
     min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
     sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
-    # --- LÓGICA DE FILTRADO ---
+    # --- LÓGICA DE FILTRADO PARA CLASES (Tab 1 y 2) ---
     df_filtered = df_raw.copy()
-    if sel_inst != 'Todas':
-        df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
-    if sel_grado != 'Todos':
-        df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
-    if sel_curso != 'Todos':
-        df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
-    if sel_sesion != 'Todos':
-        df_filtered = df_filtered[df_filtered['Sesion'] == sel_sesion]
+    if sel_inst != 'Todas': df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
+    if sel_grado != 'Todos': df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
+    if sel_curso != 'Todos': df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
+    if sel_sesion != 'Todos': df_filtered = df_filtered[df_filtered['Sesion'] == sel_sesion]
     if len(sel_dates) == 2:
         df_filtered = df_filtered[(df_filtered['Date'].dt.date >= sel_dates[0]) & (df_filtered['Date'].dt.date <= sel_dates[1])]
+
+    # --- LÓGICA DE FILTRADO PARA TALLERES (Tab 3) ---
+    # Solo aplicamos Institución, Grado y Fecha para mantener coherencia
+    df_talleres_filtered = df_talleres_raw.copy()
+    if sel_inst != 'Todas': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Institucion'] == sel_inst]
+    if sel_grado != 'Todos': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Grado'] == sel_grado]
+    if len(sel_dates) == 2:
+        df_talleres_filtered = df_talleres_filtered[(df_talleres_filtered['Date'].dt.date >= sel_dates[0]) & (df_talleres_filtered['Date'].dt.date <= sel_dates[1])]
 
     st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
     st.markdown("---")
 
-    tab1, tab2 = st.tabs(["📋 Asistencia", "📝 Rendimiento Académico"])
+    tab1, tab2, tab3 = st.tabs(["📋 Asistencia", "📝 Rendimiento Académico", "🎨 Talleres"])
 
     # --- TAB 1: ASISTENCIA ---
     with tab1:
@@ -364,3 +344,27 @@ if df_raw is not None:
                 # Formatear el puntaje a % en la tabla
                 df_t['Pct_Puntaje'] = df_t['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
                 st.dataframe(df_t.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
+
+       # --- TAB 3: TALLERES ---
+    with tab3:
+        st.header("🎨 Monitoreo de Talleres Socioemocionales")
+        
+        # Filtramos específicamente por el curso del segundo archivo
+        taller_target = "Taller de Habilidades Socioemocionales"
+        df_final_talleres = df_talleres_filtered[df_talleres_filtered['Curso'].str.contains('Habilidades Socioemocionales', case=False, na=False)]
+        
+        if not df_final_talleres.empty:
+            st.subheader(f"📊 Asistencia: {taller_target}")
+            
+            # Gráfico basado EXCLUSIVAMENTE en el archivo de talleres
+            df_asist_plot = df_final_talleres.groupby('Date')['Asistencia_Absoluta'].sum().reset_index()
+            
+            fig_taller = px.bar(
+                df_asist_plot, x='Date', y='Asistencia_Absoluta',
+                text_auto=True, color_discrete_sequence=['#FF4B4B']
+            )
+            st.plotly_chart(fig_taller, use_container_width=True)
+            
+            st.info(f"💡 Datos filtrados por Institución: {sel_inst} y Grado: {sel_grado}")
+        else:
+            st.warning("No hay registros de talleres para los filtros seleccionados.")
