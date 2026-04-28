@@ -261,61 +261,70 @@ if df_raw is not None:
                 st.plotly_chart(fig_total_asist, use_container_width=True)
                 
                 st.info("💡 **Interpretación:** El número sobre cada barra indica el total global de asistentes del día. Los números internos muestran el aporte de cada institución.")
+            
             # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
             st.markdown("---")
-            st.subheader("📈 Análisis de Tendencia de Asistencia Diaria ")
+            st.subheader("📈 Análisis de Tendencia de Asistencia Diaria (Promedio móvil de 3 sesiones)")
 
             if not df_filtered.empty:
-        # 1. Crear el DataFrame base según la selección
-               if sel_inst == 'Todas':
-              # Datos por cada institución
-                  df_plot = df_filtered.groupby(['Date', 'Institucion'])['Pct_Asistencia'].mean().reset_index()
-        
-              # Datos del Promedio General
-                  df_promedio = df_filtered.groupby('Date')['Pct_Asistencia'].mean().reset_index()
-                  df_promedio['Institucion'] = 'PROMEDIO GENERAL'
-        
-              # Unimos ambos
-                  df_final = pd.concat([df_plot, df_promedio], ignore_index=True)
-               else:
-              # Solo el colegio seleccionado
-                   df_final = df_filtered.groupby(['Date'])['Pct_Asistencia'].mean().reset_index()
-                   df_final['Institucion'] = sel_inst
+                # 1. Crear el DataFrame base según la selección
+                if sel_inst == 'Todas':
+                    # Datos por cada institución
+                    df_plot = df_filtered.groupby(['Date', 'Institucion'])['Pct_Asistencia'].mean().reset_index()
+                    
+                    # Datos del Promedio General
+                    df_promedio = df_filtered.groupby('Date')['Pct_Asistencia'].mean().reset_index()
+                    df_promedio['Institucion'] = 'PROMEDIO GENERAL'
+                    
+                    # Unimos ambos
+                    df_final = pd.concat([df_plot, df_promedio], ignore_index=True)
+                else:
+                    # Solo el colegio seleccionado
+                    df_final = df_filtered.groupby(['Date'])['Pct_Asistencia'].mean().reset_index()
+                    df_final['Institucion'] = sel_inst
 
-             # 2. Corrección de escala (0-100)
-               if df_final['Pct_Asistencia'].max() <= 1.0:
-                  df_final['Pct_Asistencia'] = df_final['Pct_Asistencia'] * 100
+                # 2. Corrección de escala (0-100)
+                if df_final['Pct_Asistencia'].max() <= 1.1:
+                    df_final['Pct_Asistencia'] = df_final['Pct_Asistencia'] * 100
 
-            # 3. Cálculo de Media Móvil (Importante: ordenar por fecha)
-               df_final = df_final.sort_values(['Institucion', 'Date'])
-               df_final['Media_Movil'] = df_final.groupby('Institucion')['Pct_Asistencia'].transform(
-                   lambda x: x.rolling(window=3, min_periods=1).mean()
-    )
+                # 3. Cálculo de Media Móvil (Importante: ordenar por fecha)
+                df_final = df_final.sort_values(['Institucion', 'Date'])
+                df_final['Media_Movil'] = df_final.groupby('Institucion')['Pct_Asistencia'].transform(
+                    lambda x: x.rolling(window=3, min_periods=1).mean()
+                )
 
-             # 4. Creación del gráfico
-             # Usamos siempre 'Institucion' en color para evitar el ValueError
-               fig_comparativo = px.line(
-                   df_final, 
-                   x='Date', 
-                   y='Media_Movil', 
-                   color='Institucion',
-                   line_shape='spline',
-                   title="Porcentaje de estudiantes asistentes (Media móvil de 3 sesiones)",
-                   labels={'Media_Movil': 'Asistencia (%)', 'Date': 'Fecha'},
-                   color_discrete_map={'PROMEDIO GENERAL': '#333333'} 
+                # 4. Definición de Colores Intensos (Personalizados)
+                colores_grafico = {
+                    'I.E Monseñor Javier Aris Huarte (Kirigueti)': '#FF0000', # Rojo intenso
+                    'I.E Carlos Ríos Ríos (Nuevo Mundo)': '#0000FF',         # Azul fuerte
+                    'I.E Juan Santos Atahualpa (Camisea)': '#008000',         # Verde
+                    'I.E N° 64518 (Segakiato)': '#FFD700',                    # Amarillo/Oro
+                    'PROMEDIO GENERAL': '#333333'                             # Gris oscuro
+                }
 
-    )
+                # 5. Creación del gráfico
+                fig_comparativo = px.line(
+                    df_final, 
+                    x='Date', 
+                    y='Media_Movil', 
+                    color='Institucion',
+                    line_shape='spline',
+                    title="Porcentaje de estudiantes asistentes (Media móvil de 3 sesiones)",
+                    labels={'Media_Movil': 'Asistencia (%)', 'Date': 'Fecha'},
+                    color_discrete_map=colores_grafico 
+                )
 
-            if 'PROMEDIO GENERAL' in df_final['Institucion'].values:
+                if 'PROMEDIO GENERAL' in df_final['Institucion'].values:
                     fig_comparativo.update_traces(
                         patch={"line": {"width": 5, "dash": 'dot'}}, 
                         selector={'name': 'PROMEDIO GENERAL'}
                     )
                 
-            fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
-            st.plotly_chart(fig_comparativo, use_container_width=True)
- 
-            st.info("💡 **¿Cómo interpretar este gráfico?:** Las líneas representa tendencias suavizadas obtenidas a partir del promedio de los porcentajes de asistencia de las última tres sesiones. El promedio general aparece en línes punteadas oscuras.")
+                fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
+                st.plotly_chart(fig_comparativo, use_container_width=True)
+                
+                st.info("💡 **¿Cómo interpretar este gráfico?:** Las líneas representa tendencias suavizadas obtenidas a partir del promedio de los porcentajes de asistencia de las última tres sesiones. El promedio general aparece en línes punteadas oscuras.")
+
 
         with st.expander("📂 Ver datos detallados de asistencia"):
                 df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
@@ -407,7 +416,7 @@ if df_raw is not None:
 
 # --- TAB 3: TALLERES ---
     with tab3:
-        st.header("🎨 Monitoreo de Talleres Socioemocionales")
+        st.header("Monitoreo de Talleres Socioemocionales e Identidad Cultural")
         
         # Filtramos específicamente por el curso del segundo archivo
         taller_target = "Taller de Habilidades Socioemocionales"
