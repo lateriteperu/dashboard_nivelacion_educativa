@@ -34,7 +34,7 @@ if not check_password():
 def load_data():
     try:
         # 1. Carga de archivos
-        df_clases = pd.read_csv('plus_petrol_2026_pii_grupal.csv')
+        df_clases = pd.read_csv('plus_petrol_2026_pii_grupal_clases.csv')
         df_talleres = pd.read_csv('plus_petrol_2026_pii_grupal_talleres.csv')
         
         # Mapa de columnas (Basado en tus archivos)
@@ -423,6 +423,63 @@ if df_raw is not None:
         df_final_talleres = df_talleres_filtered[
             df_talleres_filtered['Curso'].str.contains('Habilidades Socioemocionales', case=False, na=False) |
             df_talleres_filtered['Curso'].str.contains('Taller de Hab', case=False, na=False)
+        ].copy()
+        
+        if not df_final_talleres.empty:
+            st.subheader(f"📊 Asistencia: {taller_target}")
+            
+            # 1. Agrupamos por Fecha E Institución para poder diferenciar colores
+            df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
+            
+            # 2. Ordenamos cronológicamente
+            df_asist_plot = df_asist_plot.sort_values('Date')
+
+            # 3. Definimos la paleta de colores intensos manualmente
+            # Asocia cada institución con su color correspondiente (Rojo intenso, Azul, Verde, Amarillo)
+            colores_intensos = {
+                'I.E Monseñor Javier Aris Huarte (Kirigueti)': '#FF0000', # Rojo intenso
+                'I.E Carlos Ríos Ríos (Nuevo Mundo)': '#0000FF',         # Azul fuerte
+                'I.E Juan Santos Atahualpa (Camisea)': '#008000',         # Verde
+                'I.E N° 64518 (Segakiato)': "#D8DF0B"                    # Amarillo
+            }
+
+            # 4. Creamos el gráfico con los nuevos colores
+            fig_taller = px.bar(
+                df_asist_plot, 
+                x='Date', 
+                y='Asistencia_Absoluta',
+                color='Institucion',  # Esto crea la leyenda y la diferencia de colores
+                barmode='group',      # Las barras de colegios del mismo día se ponen una al lado de otra
+                text_auto=True,
+                title="Asistencia por institución, grado y fecha",
+                color_discrete_map=colores_intensos # Aplicamos el mapeo de colores intensos
+            )
+
+            # Ajustes de ejes y formato
+            fig_taller.update_xaxes(
+                type='date',
+                tickformat='%d-%b',
+                dtick="D1"
+            )
+            
+            fig_taller.update_layout(
+                xaxis_title="Fecha de Sesión",
+                yaxis_title="Número de Estudiantes",
+                legend_title="Institución",
+                bargap=0.2 # Espacio entre grupos de barras
+            )
+
+            st.plotly_chart(fig_taller, use_container_width=True)
+            
+            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}.")
+        else:
+            st.warning("⚠️ No se encontraron registros de talleres para los filtros seleccionados.")
+
+        # Filtramos específicamente por el taller de identidad Cultural
+        taller_target = "Taller de Identidad Cultural"
+        df_final_talleres = df_talleres_filtered[
+            df_talleres_filtered['Curso'].str.contains('Identidad Cultural', case=False, na=False) |
+            df_talleres_filtered['Curso'].str.contains('Identidad', case=False, na=False)
         ].copy()
         
         if not df_final_talleres.empty:
