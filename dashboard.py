@@ -417,7 +417,7 @@ if df_raw is not None:
 
 # --- TAB 3: TALLERES ---
     with tab3:
-        st.header("Monitoreo de Talleres Socioemocionales e Identidad Cultural")
+        st.header("Monitoreo de Asistencia a Talleres")
         
         # Filtramos específicamente por el curso del segundo archivo
         taller_target = "Taller de Habilidades Socioemocionales"
@@ -427,7 +427,7 @@ if df_raw is not None:
         ].copy()
         
         if not df_final_talleres.empty:
-            st.subheader(f"📊 Asistencia: {taller_target}")
+            st.subheader(f"📊 {taller_target}")
             
             # 1. Agrupamos por Fecha E Institución para poder diferenciar colores
             df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
@@ -484,7 +484,7 @@ if df_raw is not None:
         ].copy()
         
         if not df_final_talleres.empty:
-            st.subheader(f"📊 Asistencia: {taller_target}")
+            st.subheader(f"📊 {taller_target}")
             
             # 1. Agrupamos por Fecha E Institución para poder diferenciar colores
             df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
