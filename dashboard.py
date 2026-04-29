@@ -33,7 +33,8 @@ if not check_password():
 @st.cache_data
 def load_data():
     try:
-        # 1. Carga de archivos
+        # 1. Carga de archivos con los nombres actuales
+        # Cambiamos 'plus_petrol_2026_pii_grupal.csv' por el nuevo nombre:
         df_clases = pd.read_csv('plus_petrol_2026_pii_grupal_clases.csv')
         df_talleres = pd.read_csv('plus_petrol_2026_pii_grupal_talleres.csv')
         
