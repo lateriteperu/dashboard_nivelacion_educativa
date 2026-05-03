@@ -155,14 +155,14 @@ if df_raw is not None:
             
      # 1. Creamos los datos manualmente 
             data_metas = {
-            "LUNES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 4to A (23)", "Camisea - 4to (36)", "Segakiato - 4to y 5to (15)", "**Total: 103**"],
-            "MARTES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 4to B (22)", "Camisea - 5to (35)", "Segakiato - 4to y 5to (15)", "**Total: 95**"],
-            "JUEVES": ["Nuevo Mundo - 4to (29)", "Kirigueti - 5to A (22)", "Camisea - 4to (36)", "Segakiato - 4to y 5to (15)", "**Total: 102**"],
-            "VIERNES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 5to B (21)", "Camisea - 5to (35)", "Segakiato - 4to y 5to (15)", "**Total: 94**"]
+            "LUNES": ["Nuevo Mundo - 4to (28)", "Kirigueti - 4to A (23)", "Camisea - 4to (24)", "Segakiato - 4to y 5to (14)", "**Total: 89**"],
+            "MARTES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 4to B (22)", "Camisea - 5to (23)", "Segakiato - 4to y 5to (14)", "**Total: 82**"],
+            "JUEVES": ["Nuevo Mundo - 4to (28)", "Kirigueti - 5to A (22)", "Camisea - 4to (24)", "Segakiato - 4to y 5to (14)", "**Total: 88**"],
+            "VIERNES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 5to B (21)", "Camisea - 5to (23)", "Segakiato - 4to y 5to (14)", "**Total: 81**"]
             }          
             df_estatico = pd.DataFrame(data_metas)
             st.table(df_estatico)
-            st.caption("Nota: Esta tabla muestra el número de estudiantes esperados diariamente. El número total de estudiantes registrados en todos los colegios hasta el 22/04/2026 es de 226. No obstante, de acuerdo al horario del proyecto de nivelación, el día lunes y jueves asiste solo 4to de secundaria, mientras que, martes y viernes, solo 5to. Hay excepciones como el colegio de Segakiato en el que hay pocos alumnos por lo cual se invita a ambos grados todos los días. En el caso de Kirigueti, debido a la afluencia de estudiantes, el lunes se enseña a 4to A, martes a 4to B, jueves a 5to A y viernes a 5to B. Los días miércoles y sábados se realizan las clases de consolidación (reforzamiento adicional) dirigida a los estudiantes que requieren más apoyo en ambos grados (4to y 5to). ")
+            st.caption("Nota: Esta tabla muestra el número de estudiantes esperados diariamente. El número total de estudiantes registrados en todos los colegios hasta el 03/05/2026 es de 200. No obstante, de acuerdo al horario del proyecto de nivelación, el día lunes y jueves asiste solo 4to de secundaria, mientras que, martes y viernes, solo 5to. Hay excepciones como el colegio de Segakiato en el que hay pocos alumnos por lo cual se invita a ambos grados todos los días. En el caso de Kirigueti, debido a la afluencia de estudiantes, el lunes se enseña a 4to A, martes a 4to B, jueves a 5to A y viernes a 5to B. Los días miércoles y sábados se realizan las clases de consolidación (reforzamiento adicional) dirigida a los estudiantes que requieren más apoyo en ambos grados (4to y 5to). ")
     
             st.markdown("---")
             st.subheader("👥 Tendencia Diaria de Asistencia por Sesión")
