@@ -385,6 +385,7 @@ if df_raw is not None:
             fig_linea.update_layout(yaxis_range=[0, 105], yaxis_title="Puntaje (%)",title="Puntaje Promedio del Exit Ticket (%)")
             st.plotly_chart(fig_linea, use_container_width=True)
 
+            # 4. Distrubución de Resultados en el exit ticket
             st.subheader("📊 Distribución de Niveles de Resultado en el Exit Ticket ")
             
             # Función auxiliar para agrupar y formatear los temas avanzados en la misma fila/fecha
@@ -402,12 +403,20 @@ if df_raw is not None:
             df_rendimiento_temas = df_filtered.copy()
             df_rendimiento_temas['Tema_Dictado'] = df_rendimiento_temas.apply(consolidar_temas_fecha, axis=1)
 
-            # Agrupamos por fecha obteniendo la suma de niveles y el primer tema registrado de ese día
+            # Función para combinar de forma inteligente los temas únicos de diferentes colegios sin duplicar
+            def combinar_temas_unicos(series):
+                temas_limpios = [str(t).strip() for t in series if pd.notna(t) and str(t).strip() != "" and str(t).strip() != "nan" and str(t).strip() != "No especificado"]
+                temas_unicos = sorted(list(set(temas_limpios)))  # Elimina duplicados si coinciden en el mismo tema
+                if not temas_unicos:
+                    return "No especificado"
+                return ", ".join(temas_unicos)  # Los une en una sola línea de texto para el tooltip
+
+            # Agrupamos por fecha obteniendo la suma de niveles y la combinación de todos los temas de ese día
             df_counts = df_rendimiento_temas.groupby('Date').agg({
                 'Logro': 'sum',
                 'Proceso': 'sum',
                 'Inicio': 'sum',
-                'Tema_Dictado': 'first'
+                'Tema_Dictado': combinar_temas_unicos  # <-- Reemplazamos 'first' por nuestra función inteligente
             }).reset_index()
             
             df_counts['Total'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
@@ -415,7 +424,7 @@ if df_raw is not None:
             for col in ['Logro', 'Proceso', 'Inicio']:
                 df_counts[col] = (df_counts[col] / df_counts['Total']) * 100
             
-            # Hacemos el melt reteniendo la columna de la etiqueta temática
+            # Hacemos el melt reteniendo la columna de la etiqueta temática consolidada
             df_melt = df_counts.melt(
                 id_vars=['Date', 'Tema_Dictado'], 
                 value_vars=['Logro', 'Proceso', 'Inicio'], 
