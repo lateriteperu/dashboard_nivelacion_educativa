@@ -385,127 +385,67 @@ if df_raw is not None:
             fig_linea.update_layout(yaxis_range=[0, 105], yaxis_title="Puntaje (%)",title="Puntaje Promedio del Exit Ticket (%)")
             st.plotly_chart(fig_linea, use_container_width=True)
 
-            st.markdown("---")
-
-            # 4. Gráfico de Barras (Niveles sobre Asistentes)
             st.subheader("📊 Distribución de Niveles de Resultado en el Exit Ticket ")
-            df_counts = df_filtered.groupby('Date')[['Logro', 'Proceso', 'Inicio']].sum().reset_index()
+            
+            # Función auxiliar para agrupar y formatear los temas avanzados en la misma fila/fecha
+            def consolidar_temas_fecha(row):
+                tema_a = str(row['nombre_tema_A']).strip() if pd.notna(row['nombre_tema_A']) else ""
+                tema_b = str(row['nombre_tema_B']).strip() if pd.notna(row['nombre_tema_B']) else ""
+                if tema_a and tema_b and tema_a != "nan" and tema_b != "nan" and tema_b != "":
+                    return f"{tema_a} / {tema_b}"
+                elif tema_a and tema_a != "nan" and tema_a != "":
+                    return tema_a
+                elif tema_b and tema_b != "nan" and tema_b != "":
+                    return tema_b
+                return "No especificado"
+
+            df_rendimiento_temas = df_filtered.copy()
+            df_rendimiento_temas['Tema_Dictado'] = df_rendimiento_temas.apply(consolidar_temas_fecha, axis=1)
+
+            # Agrupamos por fecha obteniendo la suma de niveles y el primer tema registrado de ese día
+            df_counts = df_rendimiento_temas.groupby('Date').agg({
+                'Logro': 'sum',
+                'Proceso': 'sum',
+                'Inicio': 'sum',
+                'Tema_Dictado': 'first'
+            }).reset_index()
+            
             df_counts['Total'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
             
             for col in ['Logro', 'Proceso', 'Inicio']:
                 df_counts[col] = (df_counts[col] / df_counts['Total']) * 100
             
-            df_melt = df_counts.melt(id_vars='Date', value_vars=['Logro', 'Proceso', 'Inicio'], var_name='Nivel', value_name='Porcentaje')
+            # Hacemos el melt reteniendo la columna de la etiqueta temática
+            df_melt = df_counts.melt(
+                id_vars=['Date', 'Tema_Dictado'], 
+                value_vars=['Logro', 'Proceso', 'Inicio'], 
+                var_name='Nivel', 
+                value_name='Porcentaje'
+            )
             
             fig_barras = px.bar(
-                df_melt, x='Date', y='Porcentaje', color='Nivel', barmode='stack', text_auto='.1f', title="Porcentaje de estudiantes asistentes por nivel de resultado en el Exit Ticket (%)",
-                color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'}
+                df_melt, 
+                x='Date', 
+                y='Porcentaje', 
+                color='Nivel', 
+                barmode='stack', 
+                text_auto='.1f', 
+                title="Porcentaje de estudiantes asistentes por nivel de resultado en el Exit Ticket (%)",
+                color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'},
+                hover_data={'Tema_Dictado': True, 'Porcentaje': ':.1f', 'Nivel': True, 'Date': True}
             )
-            fig_barras.update_layout(yaxis_range=[0, 105])
+            
+            # Estructuración explícita de las cabeceras de información contextual emergente
+            fig_barras.update_traces(
+                hovertemplate="<b>Fecha:</b> %{x}<br><b>Nivel:</b> %{customdata[1]}<br><b>Porcentaje:</b> %{y:.1f}%<br><b>Tema Avanzado:</b> %{customdata[0]}<extra></extra>"
+            )
+            
+            fig_barras.update_layout(yaxis_range=[0, 105], yaxis_title="Porcentaje (%)", xaxis_title="Fecha")
             st.plotly_chart(fig_barras, use_container_width=True)
 
-            st.info("""💡 **Guía de Interpretación:** La barra representa el 100% de los asistentes. Logro (≥80% de respuestas correctas), Proceso (50-79% de respuestas correctas), Inicio (<50% de respuestas correctas).""")
+            st.info("""💡 **Guía de Interpretación:** La barra representa el 100% de los asistentes. Logro (≥80% de respuestas correctas), Proceso (50-79% de respuestas correctas), Inicio (<50% de respuestas correctas). Pasa el cursor por encima de cualquier barra para observar qué contenido temático se impartió.""")
 
             st.markdown("---")
-
-            # 5. Avance temático por sesión
-            st.markdown("---")
-            st.subheader("📋 Matriz de Avance Temático por Sesión")
-            
-            if 'nombre_tema_A' in df_filtered.columns:
-                df_curriculo = df_filtered.copy()
-                
-                # Mapeo de nombres cortos estructurales
-                map_nombres_cortos = {
-                    'I.E Monseñor Javier Aris Huarte (Kirigueti)': 'Kirigueti',
-                    'I.E Carlos Ríos Ríos (Nuevo Mundo)': 'Nuevo Mundo',
-                    'I.E Juan Santos Atahualpa (Camisea)': 'Camisea',
-                    'I.E N° 64518 (Segakiato)': 'Segakiato'
-                }
-                df_curriculo['Institucion_Corta'] = df_curriculo['Institucion'].map(map_nombres_cortos).fillna(df_curriculo['Institucion'])
-                
-                # Generar el número correlativo por Colegio y Curso ordenando cronológicamente
-                df_curriculo = df_curriculo.sort_values(['Curso', 'Institucion_Corta', 'Date'])
-                df_curriculo['No_Clase'] = df_curriculo.groupby(['Curso', 'Institucion_Corta']).cumcount() + 1
-                
-                # Función descriptiva para consolidar dobles temas
-                def consolidar_temas(row):
-                    tema_a = str(row['nombre_tema_A']).strip() if pd.notna(row['nombre_tema_A']) else ""
-                    tema_b = str(row['nombre_tema_B']).strip() if pd.notna(row['nombre_tema_B']) else ""
-                    
-                    if tema_a and tema_b and tema_a != "nan" and tema_b != "nan" and tema_b != "":
-                        return f"{tema_a} / {tema_b}"
-                    elif tema_a and tema_a != "nan" and tema_a != "":
-                        return tema_a
-                    elif tema_b and tema_b != "nan" and tema_b != "":
-                        return tema_b
-                    return "Sin Registrar"
-                
-                df_curriculo['Tema_Consolidado'] = df_curriculo.apply(consolidar_temas, axis=1)
-                
-                # Identificar cursos a graficar en base al filtro de la barra lateral
-                cursos_a_graficar = [sel_curso] if sel_curso != 'Todos' else sorted(df_curriculo['Curso'].unique().tolist())
-                
-                for curso_item in cursos_a_graficar:
-                    df_curso_matriz = df_curriculo[df_curriculo['Curso'] == curso_item]
-                    
-                    if not df_curso_matriz.empty:
-                        # Pivotamos utilizando el número de clase como columna (Mantiene cadenas de texto originales)
-                        df_pivot = df_curso_matriz.pivot_table(
-                            index='Institucion_Corta',
-                            columns='No_Clase',
-                            values='Tema_Consolidado',
-                            aggfunc='first'
-                        ).fillna("No dictada")
-                        
-                        # Lista de temas únicos en este curso específico para armar la paleta discreta
-                        temas_presentes = sorted(df_curso_matriz['Tema_Consolidado'].unique().tolist())
-                        if "No dictada" not in temas_presentes:
-                            temas_presentes.append("No dictada")
-                        
-                        # Paleta discreta de alto contraste (reemplaza degradados continuos)
-                        colores_vivos = px.colors.qualitative.Bold + px.colors.qualitative.Prism
-                        mapa_colores_temas = {tema: colores_vivos[i % len(colores_vivos)] for i, tema in enumerate(temas_presentes)}
-                        mapa_colores_temas["No dictada"] = "#E5ECEF"  # Gris claro neutro
-                        
-                        # Render categórico del Heatmap pasando las cadenas directamente
-                        fig_matriz = px.imshow(
-                            df_pivot,
-                            labels=dict(x="Número de Clase", y="Institución", color="Tema"),
-                            x=df_pivot.columns,
-                            y=df_pivot.index,
-                            color_discrete_map=mapa_colores_temas,
-                            title=f"Distribución Curricular Acumulada - {curso_item}"
-                        )
-                        
-                        fig_matriz.update_traces(
-                            hovertemplate="<b>Colegio:</b> %{y}<br><b>Clase N°:</b> %{x}<br><b>Tema:</b> %{z}<extra></extra>"
-                        )
-                        
-                        fig_matriz.update_layout(
-                            xaxis_title="Número correlativo de sesión dictada",
-                            yaxis_title=None,
-                            xaxis=dict(dtick=1, gridcolor='white', gridwidth=3),
-                            yaxis=dict(gridcolor='white', gridwidth=3),
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            margin=dict(t=50, b=30, l=40, r=40),
-                            showlegend=True
-                        )
-                        
-                        st.plotly_chart(fig_matriz, use_container_width=True)
-                        
-                        # Índice interactivo de temas abajo con viñetas del mismo color que la grilla
-                        st.markdown(f"**📖 Índice de temas registrados para {curso_item}:**")
-                        cols_leyenda = st.columns(3)
-                        for idx, tema_item in enumerate(temas_presentes):
-                            if tema_item != "No dictada":
-                                with cols_leyenda[idx % 3]:
-                                    color_hex = mapa_colores_temas.get(tema_item, "#000000")
-                                    st.markdown(f"<span style='color:{color_hex}; font-size:18px;'>■</span> {tema_item}", unsafe_allow_html=True)
-                
-                st.info("💡 **Guía de lectura:** Las columnas representan el número correlativo de sesión del curso. Esto permite comparar el avance de todos los colegios de forma compacta e independiente de sus semanas de rotación en el calendario.")
-            else:
-                st.warning("⚠️ Columnas curriculares no detectadas para procesar el avance temático.")
 
             # 5. Tabla Raw Data (Tab 2)
             with st.expander("📂 Ver datos detallados de rendimiento"):
