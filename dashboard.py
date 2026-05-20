@@ -463,7 +463,7 @@ if df_raw is not None:
                         # Mapear strings únicos a enteros para asignar colores discretos en el Heatmap
                         temas_unicos = sorted(list(set(df_curso_matriz['Tema_Consolidado'].unique().tolist() + ["No dictada"])))
                         dict_indices = {tema: i for i, tema in enumerate(temas_unicos)}
-                        df_pivot_num = df_pivot.applymap(lambda x: dict_indices.get(x, 0))
+                        df_pivot_num = df_pivot.map(lambda x: dict_indices.get(x, 0))
                         
                         # Paleta de colores categórica vibrante que simula tus reportes de Excel
                         paleta_viva = px.colors.qualitative.Prism if len(temas_unicos) > 5 else px.colors.qualitative.Bold
