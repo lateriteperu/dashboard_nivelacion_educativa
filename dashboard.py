@@ -55,7 +55,9 @@ def load_data():
             'inicio': 'Inicio',
             'pct_logro': 'Pct_Logro', 
             'pct_inicio': 'Pct_Inicio', 
-            'pct_proceso': 'Pct_Proceso'
+            'pct_proceso': 'Pct_Proceso',
+            'nombre_tema_A': 'nombre_tema_A',
+            'nombre_tema_B': 'nombre_tema_B'
         }
 
         def clean_and_process(df):
@@ -405,6 +407,106 @@ if df_raw is not None:
             st.info("""💡 **Guía de Interpretación:** La barra representa el 100% de los asistentes. Logro (≥80% de respuestas correctas), Proceso (50-79% de respuestas correctas), Inicio (<50% de respuestas correctas).""")
 
             st.markdown("---")
+
+            # 5. Avance temático por sesión
+            st.markdown("---")
+            st.subheader("📋 Matriz de Avance Temático por Sesión")
+            
+            if 'nombre_tema_A' in df_filtered.columns:
+                df_curriculo = df_filtered.copy()
+                
+                # Mapeo de nombres cortos para optimizar espacio en las filas
+                map_nombres_cortos = {
+                    'I.E Monseñor Javier Aris Huarte (Kirigueti)': 'Kirigueti',
+                    'I.E Carlos Ríos Ríos (Nuevo Mundo)': 'Nuevo Mundo',
+                    'I.E Juan Santos Atahualpa (Camisea)': 'Camisea',
+                    'I.E N° 64518 (Segakiato)': 'Segakiato'
+                }
+                df_curriculo['Institucion_Corta'] = df_curriculo['Institucion'].map(map_nombres_cortos).fillna(df_curriculo['Institucion'])
+                
+                # 1. ORDENAMOS CRONOLÓGICAMENTE PARA PODER CALCULAR EL NÚMERO CORRELATIVO CORRECTAMENTE
+                df_curriculo = df_curriculo.sort_values(['Curso', 'Institucion_Corta', 'Date'])
+                
+                # Calculamos el N° de Clase (1, 2, 3...) de forma independiente por cada Curso y Colegio
+                df_curriculo['No_Clase'] = df_curriculo.groupby(['Curso', 'Institucion_Corta']).cumcount() + 1
+                
+                # Función para consolidar dobles temas en la misma celda
+                def consolidar_temas(row):
+                    tema_a = str(row['nombre_tema_A']).strip() if pd.notna(row['nombre_tema_A']) else ""
+                    tema_b = str(row['nombre_tema_B']).strip() if pd.notna(row['nombre_tema_B']) else ""
+                    
+                    if tema_a and tema_b and tema_a != "nan" and tema_b != "nan" and tema_b != "":
+                        return f"{tema_a} / {tema_b}"
+                    elif tema_a and tema_a != "nan" and tema_a != "":
+                        return tema_a
+                    elif tema_b and tema_b != "nan" and tema_b != "":
+                        return tema_b
+                    return "Sin Registrar"
+                
+                df_curriculo['Tema_Consolidado'] = df_curriculo.apply(consolidar_temas, axis=1)
+                
+                # Identificar cursos a graficar en base al filtro de la barra lateral
+                cursos_a_graficar = [sel_curso] if sel_curso != 'Todos' else sorted(df_curriculo['Curso'].unique().tolist())
+                
+                for curso_item in cursos_a_graficar:
+                    df_curso_matriz = df_curriculo[df_curriculo['Curso'] == curso_item]
+                    
+                    if not df_curso_matriz.empty:
+                        # 2. PIVOTAMOS UTILIZANDO EL NÚMERO DE CLASE COMO COLUMNA
+                        df_pivot = df_curso_matriz.pivot_table(
+                            index='Institucion_Corta',
+                            columns='No_Clase',
+                            values='Tema_Consolidado',
+                            aggfunc='first'
+                        ).fillna("No dictada")
+                        
+                        # Mapear strings únicos a enteros para asignar colores discretos en el Heatmap
+                        temas_unicos = sorted(list(set(df_curso_matriz['Tema_Consolidado'].unique().tolist() + ["No dictada"])))
+                        dict_indices = {tema: i for i, tema in enumerate(temas_unicos)}
+                        df_pivot_num = df_pivot.applymap(lambda x: dict_indices.get(x, 0))
+                        
+                        # Paleta de colores categórica vibrante que simula tus reportes de Excel
+                        paleta_viva = px.colors.qualitative.Prism if len(temas_unicos) > 5 else px.colors.qualitative.Bold
+                        
+                        # 3. CREACIÓN DEL HEATMAP POR N° DE CLASE
+                        fig_matriz = px.imshow(
+                            df_pivot_num,
+                            labels=dict(x="Número de Clase", y="Institución", color="Contenido"),
+                            x=df_pivot.columns,
+                            y=df_pivot.index,
+                            color_continuous_scale=paleta_viva,
+                            title=f"Distribución Curricular Acumulada - {curso_item}"
+                        )
+                        
+                        # Customización del Hover para leer el tema completo al pasar el ratón
+                        fig_matriz.update_traces(
+                            hovertemplate="<b>Colegio:</b> %{y}<br><b>Clase N°:</b> %{x}<br><b>Tema:</b> %{customdata}<extra></extra>",
+                            customdata=df_pivot.values,
+                            showscale=False
+                        )
+                        
+                        fig_matriz.update_layout(
+                            xaxis_title="Número correlativo de sesión dictada",
+                            yaxis_title=None,
+                            xaxis=dict(dtick=1, gridcolor='white', gridwidth=3),
+                            yaxis=dict(gridcolor='white', gridwidth=3),
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            margin=dict(t=50, b=30, l=40, r=40)
+                        )
+                        
+                        st.plotly_chart(fig_matriz, use_container_width=True)
+                        
+                        # Índice interactivo de temas abajo
+                        st.markdown(f"**📖 Índice de temas registrados para {curso_item}:**")
+                        cols_leyenda = st.columns(3)
+                        for idx, tema_item in enumerate(temas_unicos):
+                            if tema_item != "No dictada":
+                                with cols_leyenda[idx % 3]:
+                                    st.markdown(f"🔹 {tema_item}")
+                
+                st.info("💡 **Guía de lectura:** Las columnas representan el número correlativo de sesión del curso. Esto permite comparar el avance de todos los colegios de forma compacta e independiente de sus semanas de rotación en el calendario.")
+            else:
+                st.warning("⚠️ Columnas curriculares no detectadas para procesar el avance temático.")
 
             # 5. Tabla Raw Data (Tab 2)
             with st.expander("📂 Ver datos detallados de rendimiento"):
