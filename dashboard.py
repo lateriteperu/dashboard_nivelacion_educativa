@@ -469,7 +469,34 @@ if df_raw is not None:
     with tab3:
         st.header("🌈 Monitoreo de Asistencia a Talleres")
         
-        # Filtramos específicamente por el curso del segundo archivo
+        colores_intensos = {
+            'I.E Monseñor Javier Aris Huarte (Kirigueti)': '#FF0000', 
+            'I.E Carlos Ríos Ríos (Nuevo Mundo)': '#0000FF',         
+            'I.E Juan Santos Atahualpa (Camisea)': '#008000',         
+            'I.E N° 64518 (Segakiato)': "#D8DF0B"                    
+        }
+
+        # Función auxiliar para formatear los temas avanzados en la misma fila/fecha del taller
+        def consolidar_temas_fecha_taller(row):
+            tema_a = str(row['nombre_tema_A']).strip() if ('nombre_tema_A' in row and pd.notna(row['nombre_tema_A'])) else ""
+            tema_b = str(row['nombre_tema_B']).strip() if ('nombre_tema_B' in row and pd.notna(row['nombre_tema_B'])) else ""
+            if tema_a and tema_b and tema_a != "nan" and tema_b != "nan" and tema_b != "":
+                return f"{tema_a} / {tema_b}"
+            elif tema_a and tema_a != "nan" and tema_a != "":
+                return tema_a
+            elif tema_b and tema_b != "nan" and tema_b != "":
+                return tema_b
+            return "No especificado"
+
+        # Función para combinar de forma inteligente los temas únicos de diferentes colegios sin duplicar
+        def combinar_temas_taller_unicos(series):
+            temas_limpios = [str(t).strip() for t in series if pd.notna(t) and str(t).strip() != "" and str(t).strip() != "nan" and str(t).strip() != "No especificado"]
+            temas_unicos = sorted(list(set(temas_limpios)))
+            if not temas_unicos:
+                return "No especificado"
+            return ", ".join(temas_unicos)
+
+        # --- 1. TALLER DE HABILIDADES SOCIOEMOCIONALES ---
         taller_target = "Taller de Habilidades Socioemocionales"
         df_final_talleres = df_talleres_filtered[
             df_talleres_filtered['Curso'].str.contains('Habilidades Socioemocionales', case=False, na=False) |
@@ -477,108 +504,99 @@ if df_raw is not None:
         ].copy()
         
         if not df_final_talleres.empty:
-            st.subheader(f"❤️{taller_target}")
+            st.subheader(f"❤️ {taller_target}")
             
-            # 1. Agrupamos por Fecha E Institución para poder diferenciar colores
-            df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
+            # Asignamos la columna consolidada de temas
+            df_final_talleres['Tema_Taller'] = df_final_talleres.apply(consolidar_temas_fecha_taller, axis=1)
             
-            # 2. Ordenamos cronológicamente
+            # Agrupamos por Fecha E Institución incluyendo la consolidación inteligente de temas
+            df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion']).agg({
+                'Asistencia_Absoluta': 'sum',
+                'Tema_Taller': combinar_temas_taller_unicos
+            }).reset_index()
+            
             df_asist_plot = df_asist_plot.sort_values('Date')
 
-            # 3. Definimos la paleta de colores intensos manualmente
-            # Asocia cada institución con su color correspondiente (Rojo intenso, Azul, Verde, Amarillo)
-            colores_intensos = {
-                'I.E Monseñor Javier Aris Huarte (Kirigueti)': '#FF0000', # Rojo intenso
-                'I.E Carlos Ríos Ríos (Nuevo Mundo)': '#0000FF',         # Azul fuerte
-                'I.E Juan Santos Atahualpa (Camisea)': '#008000',         # Verde
-                'I.E N° 64518 (Segakiato)': "#D8DF0B"                    # Amarillo
-            }
-
-            # 4. Creamos el gráfico con los nuevos colores
+            # Creamos el gráfico vinculando la variable temática al hover_data
             fig_taller = px.bar(
                 df_asist_plot, 
                 x='Date', 
                 y='Asistencia_Absoluta',
-                color='Institucion',  # Esto crea la leyenda y la diferencia de colores
-                barmode='group',      # Las barras de colegios del mismo día se ponen una al lado de otra
+                color='Institucion',  
+                barmode='group',      
                 text_auto=True,
                 title="Asistencia por institución, grado y fecha",
-                color_discrete_map=colores_intensos # Aplicamos el mapeo de colores intensos
+                color_discrete_map=colores_intensos,
+                hover_data={'Tema_Taller': True, 'Asistencia_Absoluta': True, 'Institucion': True, 'Date': '|%d-%b'},
+                labels={
+                    'Tema_Taller': 'Tema del Taller',
+                    'Asistencia_Absoluta': 'Estudiantes Asistentes',
+                    'Institucion': 'Institución',
+                    'Date': 'Fecha'
+                }
             )
 
-            # Ajustes de ejes y formato
-            fig_taller.update_xaxes(
-                type='date',
-                tickformat='%d-%b',
-                dtick="D1"
-            )
-            
+            fig_taller.update_xaxes(type='date', tickformat='%d-%b', dtick="D1")
             fig_taller.update_layout(
                 xaxis_title="Fecha de Sesión",
                 yaxis_title="Número de Estudiantes",
                 legend_title="Institución",
-                bargap=0.2 # Espacio entre grupos de barras
+                bargap=0.2 
             )
-
             st.plotly_chart(fig_taller, use_container_width=True)
-            
-            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}.")
+            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}. Pasa el cursor sobre las barras para observar el contenido temático desarrollado.")
         else:
-            st.warning("⚠️ No se encontraron registros de talleres para los filtros seleccionados.")
+            st.warning("⚠️ No se encontraron registros de talleres de habilidades socioemocionales para los filtros seleccionados.")
 
-        # Filtramos específicamente por el taller de identidad Cultural
-        taller_target = "Taller de Identidad Cultural"
-        df_final_talleres = df_talleres_filtered[
+        # --- 2. TALLER DE IDENTIDAD CULTURAL ---
+        taller_cultural = "Taller de Identidad Cultural"
+        df_final_talleres_cultural = df_talleres_filtered[
             df_talleres_filtered['Curso'].str.contains('Identidad Cultural', case=False, na=False) |
             df_talleres_filtered['Curso'].str.contains('Identidad', case=False, na=False)
         ].copy()
         
-        if not df_final_talleres.empty:
-            st.subheader(f"🌍{taller_target}")
+        if not df_final_talleres_cultural.empty:
+            st.markdown("---")
+            st.subheader(f"🌍 {taller_cultural}")
             
-            # 1. Agrupamos por Fecha E Institución para poder diferenciar colores
-            df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
+            # Asignamos la columna consolidada de temas
+            df_final_talleres_cultural['Tema_Taller'] = df_final_talleres_cultural.apply(consolidar_temas_fecha_taller, axis=1)
             
-            # 2. Ordenamos cronológicamente
-            df_asist_plot = df_asist_plot.sort_values('Date')
+            # Agrupamos por Fecha E Institución incluyendo la consolidación inteligente de temas
+            df_asist_plot_cultural = df_final_talleres_cultural.groupby(['Date', 'Institucion']).agg({
+                'Asistencia_Absoluta': 'sum',
+                'Tema_Taller': combinar_temas_taller_unicos
+            }).reset_index()
+            
+            df_asist_plot_cultural = df_asist_plot_cultural.sort_values('Date')
 
-            # 3. Definimos la paleta de colores intensos manualmente
-            # Asocia cada institución con su color correspondiente (Rojo intenso, Azul, Verde, Amarillo)
-            colores_intensos = {
-                'I.E Monseñor Javier Aris Huarte (Kirigueti)': '#FF0000', # Rojo intenso
-                'I.E Carlos Ríos Ríos (Nuevo Mundo)': '#0000FF',         # Azul fuerte
-                'I.E Juan Santos Atahualpa (Camisea)': '#008000',         # Verde
-                'I.E N° 64518 (Segakiato)': "#D8DF0B"                    # Amarillo
-            }
-
-            # 4. Creamos el gráfico con los nuevos colores
-            fig_taller = px.bar(
-                df_asist_plot, 
+            # Creamos el gráfico de identidad cultural vinculando el tema al hover_data
+            fig_cultural = px.bar(
+                df_asist_plot_cultural, 
                 x='Date', 
                 y='Asistencia_Absoluta',
-                color='Institucion',  # Esto crea la leyenda y la diferencia de colores
-                barmode='group',      # Las barras de colegios del mismo día se ponen una al lado de otra
+                color='Institucion',  
+                barmode='group',      
                 text_auto=True,
                 title="Asistencia por institución, grado y fecha",
-                color_discrete_map=colores_intensos # Aplicamos el mapeo de colores intensos
+                color_discrete_map=colores_intensos,
+                hover_data={'Tema_Taller': True, 'Asistencia_Absoluta': True, 'Institucion': True, 'Date': '|%d-%b'},
+                labels={
+                    'Tema_Taller': 'Tema del Taller',
+                    'Asistencia_Absoluta': 'Estudiantes Asistentes',
+                    'Institucion': 'Institución',
+                    'Date': 'Fecha'
+                }
             )
 
-            # Ajustes de ejes y formato
-            fig_taller.update_xaxes(
-                type='date',
-                tickformat='%d-%b',
-                dtick="D1"
-            )
-            
-            fig_taller.update_layout(
+            fig_cultural.update_xaxes(type='date', tickformat='%d-%b', dtick="D1")
+            fig_cultural.update_layout(
                 xaxis_title="Fecha de Sesión",
                 yaxis_title="Número de Estudiantes",
                 legend_title="Institución",
-                bargap=0.2 # Espacio entre grupos de barras
+                bargap=0.2
             )
-
-            st.plotly_chart(fig_taller, use_container_width=True)
-            
-            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}.")
+            st.plotly_chart(fig_cultural, use_container_width=True)
+            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}. Pasa el cursor sobre las barras para observar el contenido temático desarrollado.")
         else:
-            st.warning("⚠️ No se encontraron registros de talleres para los filtros seleccionados.")
+            st.warning("⚠️ No se encontraron registros de talleres de identidad cultural para los filtros seleccionados.")
