@@ -57,7 +57,8 @@ def load_data():
             'pct_inicio': 'Pct_Inicio', 
             'pct_proceso': 'Pct_Proceso',
             'nombre_tema_A': 'nombre_tema_A',
-            'nombre_tema_B': 'nombre_tema_B'
+            'nombre_tema_B': 'nombre_tema_B',
+            'comment_class': 'comment_class'
         }
 
         def clean_and_process(df):
@@ -333,6 +334,50 @@ if df_raw is not None:
                 df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
                 df_tabla_asist['Date'] = df_tabla_asist['Date'].dt.strftime('%d-%m-%Y')
                 st.dataframe(df_tabla_asist.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
+
+            # =========================================================================
+            # --- TABLA CONTINUA DE INCIDENCIAS DE CLASE ---
+            # =========================================================================
+        st.markdown("---")
+        st.subheader("💬 Registro Centralizado de Incidencias y Observaciones de Aula")
+            
+        if 'comment_class' in df_filtered.columns:
+                df_incidencias = df_filtered.copy()
+                
+                # Evaluamos de forma segura el texto de las observaciones de aula
+                txt_class_limpio = df_incidencias['comment_class'].astype(str).str.strip()
+                
+                # FILTRO: Conservamos solo los días/secciones donde el docente escribió una incidencia real
+                df_tabla_incidencias = df_incidencias[
+                    (df_incidencias['comment_class'].notna()) & 
+                    (txt_class_limpio != "") & 
+                    (txt_class_limpio != "nan") & 
+                    (txt_class_limpio != "None")
+                ].copy()
+                
+                if not df_tabla_incidencias.empty:
+                    # Ordenamos cronológicamente (más reciente arriba)
+                    df_tabla_incidencias = df_tabla_incidencias.sort_values(by='Date', ascending=False)
+                    df_tabla_incidencias['Fecha'] = df_tabla_incidencias['Date'].dt.strftime('%d-%b-%Y')
+                    df_tabla_incidencias['comment_class'] = df_tabla_incidencias['comment_class'].astype(str).replace(['nan', 'None'], '')
+                    
+                    # Estructuramos las columnas visibles de manera clara para auditoría grupal
+                    df_render_incidencias = df_tabla_incidencias[['Fecha', 'Institucion', 'Grado', 'Curso', 'Sesion', 'comment_class']].rename(columns={
+                        'comment_class': 'Incidencias / Observaciones de la Clase (comment_class)',
+                        'Sesion': 'Tipo de Sesión'
+                    })
+                    
+                    st.write(f"Se encontraron **{len(df_render_incidencias)}** reportes grupales en el periodo seleccionado:")
+                    st.dataframe(
+                        df_render_incidencias,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                else:
+                    st.info("✨ No se registraron incidencias grupales (`comment_class`) para los filtros seleccionados en este rango de fechas.")
+        else:
+                st.warning("⚠️ La variable 'comment_class' no fue encontrada en el archivo CSV de clases.")
+            # =========================================================================
 
  # --- TAB 2: RENDIMIENTO ACADÉMICO ---
     with tab2:
