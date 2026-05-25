@@ -363,7 +363,7 @@ if df_raw is not None:
                     
                     # Estructuramos las columnas visibles de manera clara para auditoría grupal
                     df_render_incidencias = df_tabla_incidencias[['Fecha', 'Institucion', 'Grado', 'Curso', 'Sesion', 'comment_class']].rename(columns={
-                        'comment_class': 'Incidencias / Observaciones de la Clase (comment_class)',
+                        'comment_class': 'Incidencias / Observaciones de la Clase',
                         'Sesion': 'Tipo de Sesión'
                     })
                     
@@ -374,7 +374,7 @@ if df_raw is not None:
                         hide_index=True
                     )
                 else:
-                    st.info("✨ No se registraron incidencias grupales (`comment_class`) para los filtros seleccionados en este rango de fechas.")
+                    st.info("✨ No se registraron incidencias grupales para los filtros seleccionados en este rango de fechas.")
         else:
                 st.warning("⚠️ La variable 'comment_class' no fue encontrada en el archivo CSV de clases.")
             # =========================================================================
