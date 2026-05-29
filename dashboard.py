@@ -29,16 +29,15 @@ def check_password():
 if not check_password():
     st.stop()
 
-# @st.cache_data
+# --- 2. CARGA DE DATOS OPTIMIZADA CON CACHÉ ---
 @st.cache_data
 def load_data():
     try:
-        # 1. Carga de archivos con los nombres actuales
-        # Cambiamos 'plus_petrol_2026_pii_grupal.csv' por el nuevo nombre:
+        # Carga de archivos CSV correspondientes al dashboard grupal
         df_clases = pd.read_csv('plus_petrol_2026_pii_grupal_clases.csv')
         df_talleres = pd.read_csv('plus_petrol_2026_pii_grupal_talleres.csv')
         
-        # Mapa de columnas (Basado en tus archivos)
+        # Diccionario de homologación de nombres de columnas
         column_map = {
             'q8_fecha_clase': 'Date', 
             'q4_institucion': 'Institucion', 
@@ -62,21 +61,21 @@ def load_data():
         }
 
         def clean_and_process(df):
-            # Limpieza crítica: quitar espacios en los nombres de las columnas del CSV
+            # Limpieza crítica: remover espacios en blanco en la cabecera de las columnas
             df.columns = df.columns.str.strip()
             
-            # Renombrar
+            # Renombrar columnas según el mapeo estándar
             df = df.rename(columns=column_map)
             
-            # Asegurar que la columna Horas exista (si duration_h falló, ponemos 0)
+            # Garantizar la existencia de la columna Horas
             if 'Horas' not in df.columns:
                 df['Horas'] = 0
             
-            # Procesar fechas
+            # Procesar y formatear objetos de fecha de manera segura
             df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
             df = df.dropna(subset=['Date'])
             
-            # Limpiar espacios en los datos de texto
+            # Normalizar textos eliminando espacios residuales en los registros
             text_cols = ['Institucion', 'Grado', 'Curso', 'Sesion']
             for col in text_cols:
                 if col in df.columns:
@@ -84,12 +83,16 @@ def load_data():
             
             return df
 
+        # Procesamos la base académica de clases
         df_clases = clean_and_process(df_clases)
-        # Específico para clases acadmicas
-        df_clases['Sesion'] = df_clases['Sesion'].replace(
-            ['Sesión de reforzamiento', 'Sesión de Reforzamiento'], 'Sesión regular'
-        )
+        
+        # 🔄 CORRECCIÓN CRÍTICA: Reemplazo nativo sobre las filas de la serie 'Sesion'
+        if 'Sesion' in df_clases.columns:
+            df_clases['Sesion'] = df_clases['Sesion'].replace(
+                ['Sesión de reforzamiento', 'Sesión de Reforzamiento'], 'Sesión regular'
+            )
 
+        # Procesamos la base de talleres
         df_talleres = clean_and_process(df_talleres)
         
         return df_clases, df_talleres
@@ -100,9 +103,9 @@ def load_data():
 df_raw, df_talleres_raw = load_data()
 
 if df_raw is not None:
-    # --- BARRA LATERAL ---
+    # --- 3. BARRA LATERAL (FILTROS) ---
     st.sidebar.header("Filtros del Dashboard")
-    # Los filtros solo se alimentan de la base de CLASES (Académica)
+    
     sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_raw['Institucion'].unique().tolist()))
     sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_raw['Grado'].unique().tolist()))
     sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_raw['Curso'].unique().tolist()))
@@ -111,12 +114,12 @@ if df_raw is not None:
     min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
     sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
-    # --- LIMPIEZA DE CACHE ---
+    # --- BOTÓN DE LIMPIEZA DE CACHÉ ---
     st.sidebar.markdown("---")
     if st.sidebar.button("🔄 Recargar Base de Datos (Limpiar Caché)", use_container_width=True):
-       st.cache_data.clear() 
-       st.success("¡Datos actualizados!")
-       st.rerun()
+        st.cache_data.clear() 
+        st.success("¡Datos actualizados!")
+        st.rerun()
 
     # --- LÓGICA DE FILTRADO ---
     # 1. Filtramos la base Académica (Tab 1 y 2)
@@ -125,14 +128,14 @@ if df_raw is not None:
     if sel_grado != 'Todos': df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
     if sel_curso != 'Todos': df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
     if sel_sesion != 'Todos': df_filtered = df_filtered[df_filtered['Sesion'] == sel_sesion]
-    if len(sel_dates) == 2:
+    if isinstance(sel_dates, list) and len(sel_dates) == 2:
         df_filtered = df_filtered[(df_filtered['Date'].dt.date >= sel_dates[0]) & (df_filtered['Date'].dt.date <= sel_dates[1])]
 
     # 2. Filtramos la base de Talleres (Tab 3) - Solo por Inst, Grado y Fecha
     df_talleres_filtered = df_talleres_raw.copy()
     if sel_inst != 'Todas': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Institucion'] == sel_inst]
     if sel_grado != 'Todos': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Grado'] == sel_grado]
-    if len(sel_dates) == 2:
+    if isinstance(sel_dates, list) and len(sel_dates) == 2:
         df_talleres_filtered = df_talleres_filtered[(df_talleres_filtered['Date'].dt.date >= sel_dates[0]) & (df_talleres_filtered['Date'].dt.date <= sel_dates[1])]
 
     st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
