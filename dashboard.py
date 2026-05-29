@@ -116,7 +116,7 @@ if df_raw is not None:
 
     # --- BOTÓN DE LIMPIEZA DE CACHÉ ---
     st.sidebar.markdown("---")
-    if st.sidebar.button("🔄 Recargar Base de Datos (Limpiar Caché)", use_container_width=True):
+    if st.sidebar.button("🔄 Recargar Base de Datos", use_container_width=True):
         st.cache_data.clear() 
         st.success("¡Datos actualizados!")
         st.rerun()
