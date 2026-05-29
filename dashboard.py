@@ -111,6 +111,13 @@ if df_raw is not None:
     min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
     sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
+    # --- LIMPIEZA DE CACHE ---
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔄 Recargar Base de Datos (Limpiar Caché)", use_container_width=True):
+       st.cache_data.clear() 
+       st.success("¡Datos actualizados!")
+       st.rerun()
+
     # --- LÓGICA DE FILTRADO ---
     # 1. Filtramos la base Académica (Tab 1 y 2)
     df_filtered = df_raw.copy()
