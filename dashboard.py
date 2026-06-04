@@ -4,12 +4,12 @@ import plotly.express as px
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Seguimiento Individual- Laterite",
-    page_icon="👤",
+    page_title="Monitoreo de Asistencia y Notas",
+    page_icon="📚",
     layout="wide"
 )
 
-# --- 1. PROTECCIÓN POR CONTRASEÑA ---
+# --- PROTECCIÓN POR CONTRASEÑA ---
 def check_password():
     def password_entered():
         if st.session_state["password"] == st.secrets["PASSWORD"]:
@@ -21,452 +21,637 @@ def check_password():
     if st.session_state.get("password_correct", False):
         return True
 
-    st.title("🔐 Acceso al Sistema de Seguimiento")
-    st.text_input("Ingrese la contraseña del programa:", type="password", on_change=password_entered, key="password")
+    st.text_input("Ingrese su contraseña", type="password", on_change=password_entered, key="password")
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-        st.error("😕 Contraseña incorrecta. Intente de nuevo.")
+        st.error("Contraseña incorrecta")
     return False
 
-if check_password():
+if not check_password():
+    st.stop()
 
-    # --- 2. CARGA DE DATOS ---
-    @st.cache_data
-    def load_data():
-        try:
-            # Uso de 'utf-8-sig' para proteger la integridad de tildes y caracteres especiales
-            df = pd.read_csv("plus_petrol_2026_pii_individual.csv", encoding='utf-8-sig')
-            
-            # Limpieza crítica de espacios ocultos en los nombres de las columnas
+# --- 2. CARGA DE DATOS OPTIMIZADA CON CACHÉ ---
+@st.cache_data
+def load_data():
+    try:
+        # Carga de archivos CSV correspondientes al dashboard grupal
+        df_clases = pd.read_csv('plus_petrol_2026_pii_grupal_clases.csv')
+        df_talleres = pd.read_csv('plus_petrol_2026_pii_grupal_talleres.csv')
+        
+        # Diccionario de homologación de nombres de columnas
+        column_map = {
+            'q8_fecha_clase': 'Date', 
+            'q4_institucion': 'Institucion', 
+            'q5_grado': 'Grado', 
+            'q3_curso': 'Curso', 
+            'asistencia': 'Asistencia_Absoluta',
+            'q7_sesion': 'Sesion', 
+            'pct_asistencia': 'Pct_Asistencia', 
+            'pct_puntaje': 'Pct_Puntaje',
+            'duration_h': 'Horas', 
+            'n_alumnos': 'Alumnos',
+            'logro': 'Logro', 
+            'proceso': 'Proceso', 
+            'inicio': 'Inicio',
+            'pct_logro': 'Pct_Logro', 
+            'pct_inicio': 'Pct_Inicio', 
+            'pct_proceso': 'Pct_Proceso',
+            'nombre_tema_A': 'nombre_tema_A',
+            'nombre_tema_B': 'nombre_tema_B',
+            'comment_class': 'comment_class'
+        }
+
+        def clean_and_process(df):
+            # Limpieza crítica: remover espacios en blanco en la cabecera de las columnas
             df.columns = df.columns.str.strip()
             
-            # Renombramos q8_fecha_clase a Date para compatibilidad con filtros temporales
-            df = df.rename(columns={'q8_fecha_clase': 'Date'})
+            # Renombrar columnas según el mapeo estándar
+            df = df.rename(columns=column_map)
             
-            # Convertir a datetime de forma segura
+            # Garantizar la existencia de la columna Horas
+            if 'Horas' not in df.columns:
+                df['Horas'] = 0
+            
+            # Procesar y formatear objetos de fecha de manera segura
             df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
             df = df.dropna(subset=['Date'])
             
+            # Normalizar textos eliminando espacios residuales en los registros
+            text_cols = ['Institucion', 'Grado', 'Curso', 'Sesion']
+            for col in text_cols:
+                if col in df.columns:
+                    df[col] = df[col].astype(str).str.strip()
+            
             return df
-        except Exception as e:
-            st.error(f"Error al cargar el archivo CSV: {e}")
-            return None
 
-    df_raw = load_data()
-
-    if df_raw is not None:
-        # --- 3. BARRA LATERAL (FILTROS) ---
-        st.sidebar.header("Filtros de Búsqueda")
+        # Procesamos la base académica de clases
+        df_clases = clean_and_process(df_clases)
         
-        sel_inst = st.sidebar.selectbox("Institución:", ['Todas'] + sorted(df_raw['q4_institucion'].unique().astype(str).tolist()))
-        sel_grado = st.sidebar.selectbox("Grado:", ['Todos'] + sorted(df_raw['q5_grado'].unique().astype(str).tolist()))
+        # 🔄 CORRECCIÓN CRÍTICA: Reemplazo nativo sobre las filas de la serie 'Sesion'
+        if 'Sesion' in df_clases.columns:
+            df_clases['Sesion'] = df_clases['Sesion'].replace(
+                ['Sesión de reforzamiento', 'Sesión de Reforzamiento'], 'Sesión regular'
+            )
+
+        # Procesamos la base de talleres
+        df_talleres = clean_and_process(df_talleres)
         
-        # --- FILTRO POR SECCIÓN INTELIGENTE ---
-        if sel_inst != 'Todas':
-            secciones_disponibles = df_raw[df_raw['q4_institucion'] == sel_inst]['q6_seccion'].dropna().unique()
-        else:
-            secciones_disponibles = df_raw['q6_seccion'].dropna().unique()
+        return df_clases, df_talleres
+    except Exception as e:
+        st.error(f"Error crítico al cargar archivos: {e}")
+        return None, None
 
-        if len(secciones_disponibles) > 0:
-            opciones_seccion = ['Todas'] + sorted(secciones_disponibles.astype(str).tolist())
-            sel_seccion = st.sidebar.selectbox("Sección:", opciones_seccion)
-        else:
-            sel_seccion = 'Todas'
-            st.sidebar.info("Este colegio cuenta con una única sección por grado.")
+df_raw, df_talleres_raw = load_data()
 
-        # --- FILTRO CURSO AMIGABLE ("4" -> "Taller de Identidad Cultural") ---
-        cursos_reales = sorted(df_raw['q3_curso'].unique().astype(str).tolist())
-        opciones_curso_visual = []
-        for curso in cursos_reales:
-            if curso.strip() == '4':
-                opciones_curso_visual.append("Taller de Identidad Cultural")
-            else:
-                opciones_curso_visual.append(curso)
-        sel_curso = st.sidebar.selectbox("Curso:", ['Todos'] + opciones_curso_visual)
-        
-        # --- RANGO DE FECHAS ---
-        min_date = df_raw['Date'].min().date()
-        max_date = df_raw['Date'].max().date()
-        sel_dates = st.sidebar.date_input("Rango de Fechas:", value=(min_date, max_date), min_value=min_date, max_value=max_date)
+if df_raw is not None:
+    # --- 3. BARRA LATERAL (FILTROS) ---
+    st.sidebar.header("Filtros del Dashboard")
+    
+    sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_raw['Institucion'].unique().tolist()))
+    sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_raw['Grado'].unique().tolist()))
+    sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_raw['Curso'].unique().tolist()))
+    sel_sesion = st.sidebar.selectbox("Seleccionar Tipo de Sesión:", ['Todos'] + sorted(df_raw['Sesion'].unique().tolist()))
 
-        # --- FILTRO SESIÓN AMIGABLE ("Sesión de reforzamiento" -> "Sesión Regular") ---
-        sesiones_reales = sorted(df_raw['q7_sesion'].unique().astype(str).tolist())
-        opciones_sesion_visual = []
-        for sesion in sesiones_reales:
-            if sesion.strip().lower() in ['sesión de reforzamiento', 'sesion de reforzamiento']:
-                opciones_sesion_visual.append("Sesión Regular")
-            else:
-                opciones_sesion_visual.append(sesion)
-                
-        lista_final_sesiones = ['Todos'] + opciones_sesion_visual
-        idx_def = lista_final_sesiones.index('Sesión Regular') if 'Sesión Regular' in lista_final_sesiones else 0
-        sel_sesion = st.sidebar.selectbox("Tipo de Sesión:", lista_final_sesiones, index=idx_def)
+    min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
+    sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
-        # --- LIMPIEZA DE CACHE ---
-        st.sidebar.markdown("---")
-        if st.sidebar.button("🔄 Recargar Base de Datos ", use_container_width=True):
-            st.cache_data.clear() 
-            st.success("¡Datos actualizados!")
-            st.rerun()
+    # --- BOTÓN DE LIMPIEZA DE CACHÉ ---
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔄 Recargar Base de Datos", use_container_width=True):
+        st.cache_data.clear() 
+        st.success("¡Datos actualizados!")
+        st.rerun()
 
-        # =========================================================================
-        # --- LÓGICA DE FILTRADO CON EXCLUSIÓN DE SEMANAS DE RECESO ---
-        # =========================================================================
-        df_filtered = df_raw.copy()
-        
-        if sel_inst != 'Todas': 
-            df_filtered = df_filtered[df_filtered['q4_institucion'] == sel_inst]
+    # --- LÓGICA DE FILTRADO ---
+    # 1. Filtramos la base Académica (Tab 1 y 2)
+    df_filtered = df_raw.copy()
+    if sel_inst != 'Todas': df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
+    if sel_grado != 'Todos': df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
+    if sel_curso != 'Todos': df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
+    if sel_sesion != 'Todos': df_filtered = df_filtered[df_filtered['Sesion'] == sel_sesion]
+    if isinstance(sel_dates, list) and len(sel_dates) == 2:
+        df_filtered = df_filtered[(df_filtered['Date'].dt.date >= sel_dates[0]) & (df_filtered['Date'].dt.date <= sel_dates[1])]
+
+    # 2. Filtramos la base de Talleres (Tab 3) - Solo por Inst, Grado y Fecha
+    df_talleres_filtered = df_talleres_raw.copy()
+    if sel_inst != 'Todas': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Institucion'] == sel_inst]
+    if sel_grado != 'Todos': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Grado'] == sel_grado]
+    if isinstance(sel_dates, list) and len(sel_dates) == 2:
+        df_talleres_filtered = df_talleres_filtered[(df_talleres_filtered['Date'].dt.date >= sel_dates[0]) & (df_talleres_filtered['Date'].dt.date <= sel_dates[1])]
+
+    st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
+    st.markdown("---")
+
+    tab1, tab2, tab3 = st.tabs(["📋 Asistencia", "📝 Rendimiento Académico", "🎨 Talleres"])
+
+    # --- TAB 1: ASISTENCIA ---
+    with tab1:
+        st.header("📅 Resumen de Asistencia por Sesión")
+        if not df_filtered.empty:
+            # Cálculos
+            df_sesiones_unicas = df_filtered.groupby(['Date', 'Institucion', 'Sesion'])['Horas'].first().reset_index()
+            num_sesiones = len(df_sesiones_unicas)
+            horas_totales = df_sesiones_unicas['Horas'].sum()
+            total_asistentes = df_filtered['Asistencia_Absoluta'].sum()
+            total_inscritos = df_filtered['Alumnos'].sum()
+            asistencia_global = (total_asistentes / total_inscritos * 100) if total_inscritos > 0 else 0
+            prom_niños = total_asistentes / num_sesiones if num_sesiones > 0 else 0
             
-        if sel_grado != 'Todos': 
-            df_filtered = df_filtered[df_filtered['q5_grado'] == sel_grado]
+            # Métricas
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Número de sesiones", num_sesiones, help="Número de clases dictadas. Se imparte una sesión diariamente de lunes a sábado.")
+            m2.metric("Horas efectivas clase", f"{horas_totales:.1f}", help="Cada sesión regular tiene una duración de 160 minutos y cada sesión de consolidación (reforzamiento adicional), 80 minutos.")
+            m3.metric("Prom.Estudiantes asistentes", f"{prom_niños:.1f}", help="Promedio de estudiantes asistentes")
+            m4.metric("Asistencia Promedio por sesión (%)", f"{asistencia_global:.1f}%", help="Porcentaje de estudiantes asistentes respecto al total de estudiantes que deberían asistir por día.")
 
-        if sel_seccion != 'Todas': 
-            df_filtered = df_filtered[df_filtered['q6_seccion'] == sel_seccion]
+            st.markdown("---")
+            st.subheader("📋 Metas de Asistencia Diaria a Sesiones Regulares")
             
-        if sel_curso != 'Todos': 
-            if sel_curso == "Taller de Identidad Cultural":
-                df_filtered = df_filtered[df_filtered['q3_curso'].astype(str).str.strip() == '4']
-            else:
-                df_filtered = df_filtered[df_filtered['q3_curso'] == sel_curso]
-            
-        if sel_sesion != 'Todos': 
-            if sel_sesion == "Sesión Regular":
-                df_filtered = df_filtered[df_filtered['q7_sesion'].astype(str).str.strip().str.lower().isin(['sesión de reforzamiento', 'sesion de reforzamiento'])]
-            else:
-                df_filtered = df_filtered[df_filtered['q7_sesion'] == sel_sesion]
-        
-        if isinstance(sel_dates, tuple) and len(sel_dates) == 2:
-            start_date, end_date = sel_dates
-            df_filtered = df_filtered[
-                (df_filtered['Date'].dt.date >= start_date) & 
-                (df_filtered['Date'].dt.date <= end_date)
-            ]
-
-        # ✂️ TIJERA AUTOMÁTICA DE RECESO: Excluye el periodo inactivo (17 al 31 de mayo de 2026)
-        receso_inicio = pd.to_datetime('2026-05-17').date()
-        receso_fin = pd.to_datetime('2026-05-31').date()
-        df_filtered = df_filtered[
-            ~((df_filtered['Date'].dt.date >= receso_inicio) & (df_filtered['Date'].dt.date <= receso_fin))
-        ]
-
-        # --- 4. TÍTULO Y DECLARACIÓN DE LAS TRES PESTAÑAS ---
-        st.title("📚 Panel de Seguimiento de Estudiantes: Proyecto de Nivelación Educativa en el Bajo Urubamba 🏫")
-        tab1, tab2, tab3 = st.tabs(["📋 Asistencia Individual", "🎯 Rendimiento Académico", "🚨 Alertas de Monitoreo"])
-
-        # --- TAB 1: ASISTENCIA ---
-        with tab1:
-            st.subheader("📅 Matriz de Asistencia Diaria")
-            if not df_filtered.empty:
-                asist_pivot = df_filtered.pivot_table(
-                    index=['row_key', 'nombre'], 
-                    columns='Date', 
-                    values='asistencia', 
-                    aggfunc='first'
-                ).sort_index()
-                
-                asist_pivot = asist_pivot.dropna(axis=1, how='all')
-
-                if not asist_pivot.empty:
-                    asist_pivot['Total Asist.'] = asist_pivot.sum(axis=1, skipna=True)
-                    asist_pivot['Sesiones'] = asist_pivot.drop(columns=['Total Asist.']).count(axis=1)
-
-                    fechas_timestamps = list(asist_pivot.columns[:-2])
-
-                    asist_pivot.columns = [
-                        c.strftime('%d-%m') if isinstance(c, pd.Timestamp) else c 
-                        for c in asist_pivot.columns
-                    ]
-                    
-                    columnas_fechas_str = [c.strftime('%d-%m') for c in fechas_timestamps]
-                    
-                    def style_asist(val):
-                        if val == 1: return 'background-color: #2ecc71; color: #2ecc71' 
-                        if val == 0: return 'background-color: #e74c3c; color: #e74c3c' 
-                        return 'background-color: #f0f2f6; color: #f0f2f6' 
-
-                    df_interactivo = asist_pivot.reset_index()
-                    
-                    st.dataframe(
-                        df_interactivo.style.map(style_asist, subset=columnas_fechas_str)
-                        .format("{:.0f}", na_rep=" ", subset=columnas_fechas_str)
-                        .format("{:.0f}", subset=['Total Asist.', 'Sesiones']), 
-                        use_container_width=True,
-                        hide_index=True
-                    )
-                    st.info("🟩 **Verde**: Asistió  |  🟥 **Rojo**: Falta  |  ⚪ **Sin registro**")
-                    
-                    # --- TABLA EXCLUSIVA DE COMENTARIOS ---
-                    st.markdown("---")
-                    st.subheader("💬 Registro Centralizado de Observaciones del Alumno")
-                    
-                    col_A = 'comentarios'
-                    if col_A in df_filtered.columns:
-                        df_comentarios = df_filtered.copy()
-                        txt_A_limpio = df_comentarios[col_A].astype(str).str.strip()
-                        
-                        df_tabla_comentarios = df_comentarios[
-                            (df_comentarios[col_A].notna()) & 
-                            (txt_A_limpio != "") & 
-                            (txt_A_limpio != "nan") & 
-                            (txt_A_limpio != "None")
-                        ].copy()
-                        
-                        if not df_tabla_comentarios.empty:
-                            df_tabla_comentarios = df_tabla_comentarios.sort_values(by=['Date', 'nombre'], ascending=[False, True])
-                            df_tabla_comentarios['Fecha'] = df_tabla_comentarios['Date'].dt.strftime('%d-%b-%Y')
-                            df_tabla_comentarios['Asistencia'] = df_tabla_comentarios['asistencia'].map({1: '🟩 Asistió', 0: '🟥 Faltó'}).fillna('Sin Registro')
-                            df_tabla_comentarios[col_A] = df_tabla_comentarios[col_A].astype(str).replace(['nan', 'None'], '')
-                                
-                            df_render = df_tabla_comentarios[['Fecha', 'nombre', 'q3_curso', 'Asistencia', col_A]].rename(columns={
-                                'nombre': 'Estudiante',
-                                'q3_curso': 'Curso',
-                                col_A: 'Comentario Alumno'
-                            })
-                            
-                            st.write(f"Se encontraron **{len(df_render)}** observaciones de estudiantes en las fechas seleccionadas:")
-                            st.dataframe(df_render, use_container_width=True, hide_index=True)
-                        else:
-                            st.info("✨ No se registran comentarios individuales en la columna 'comentarios' para los filtros de fecha seleccionados.")
-                    else:
-                        st.warning(f"⚠️ La columna '{col_A}' no se encuentra en el archivo CSV.")
-
-        # --- TAB 2: RENDIMIENTO ---
-        with tab2:
-            st.subheader("🎯 Matriz de Notas y Niveles de Logro")
-            if not df_filtered.empty:
-                df_labels = df_filtered.copy()
-                
-                def get_label(row):
-                    if row['logro'] == 1: return 'Logro'
-                    if row['proceso'] == 1: return 'Proceso'
-                    if row['inicio'] == 1: return 'Inicio'
-                    return None 
-
-                df_labels['nivel_texto'] = df_labels.apply(get_label, axis=1)
-
-                # Pivot principal para las notas por fecha
-                notas_pivot = df_labels.pivot_table(
-                    index=['row_key', 'nombre'], 
-                    columns='Date', 
-                    values='nivel_texto', 
-                    aggfunc='first'
-                ).sort_index()
-
-                notas_pivot = notas_pivot.dropna(axis=1, how='all')
-
-                if not notas_pivot.empty:
-                    # --- 1. CÁLCULO DE PROMEDIOS INDIVIDUALES (EXIT TICKETS) ---
-                    df_filtered['pct_puntaje_num'] = pd.to_numeric(df_filtered['pct_puntaje'], errors='coerce')
-                    df_solo_notas_reales = df_filtered[df_filtered['pct_puntaje_num'].notna()].copy()
-                    
-                    df_promedios = df_solo_notas_reales.groupby(['row_key', 'nombre'])['pct_puntaje_num'].mean().reset_index()
-                    df_promedios = df_promedios.set_index(['row_key', 'nombre'])
-                    
-                    columnas_fechas_originales = list(notas_pivot.columns)
-
-                    # --- 2. CÁLCULO DE MÉTRICAS GRUPALES RESUMEN ---
-                    conteo_logro = (notas_pivot == 'Logro').sum(axis=0)
-                    total_asistentes_fecha = notas_pivot.notna().sum(axis=0)
-                    porcentaje_logro = (conteo_logro / total_asistentes_fecha * 100).fillna(0)
-
-                    # Multiplicamos por 100 el promedio bruto de los Exit Tickets
-                    notas_pivot['Promedio ET'] = df_promedios['pct_puntaje_num'] * 100
-
-                    # --- 3. EXTRACCIÓN HISTÓRICA DIRECTA DE EXÁMENES DESDE EL CSV ORIGINAL ---
-                    name_col_m = 'pct_LB_m'
-                    name_col_l = 'pct_LB_l'
-
-                    # Control dinámico de visibilidad lateral en estricta coherencia con el Filtro de Curso
-                    incluir_m = True
-                    incluir_l = True
-                    if sel_curso != 'Todos':
-                        if 'mat' in sel_curso.lower(): incluir_l = False
-                        elif 'lect' in sel_curso.lower() or 'comu' in sel_curso.lower(): incluir_m = False
-
-                    mapa_m = {}
-                    mapa_l = {}
-                    
-                    df_raw_clean = df_raw.copy()
-                    df_raw_clean['row_key_str'] = df_raw_clean['row_key'].astype(str).str.strip()
-
-                    # Procesamos Línea de Base - Matemática
-                    if incluir_m and name_col_m in df_raw_clean.columns:
-                        df_raw_clean[name_col_m] = pd.to_numeric(df_raw_clean[name_col_m], errors='coerce')
-                        df_valid_m = df_raw_clean.dropna(subset=[name_col_m])
-                        if not df_valid_m.empty:
-                            mapa_m = (df_valid_m.groupby('row_key_str')[name_col_m].max() * 100).to_dict()
-
-                    # Procesamos Línea de Base - Lectoescritura
-                    if incluir_l and name_col_l in df_raw_clean.columns:
-                        df_raw_clean[name_col_l] = pd.to_numeric(df_raw_clean[name_col_l], errors='coerce')
-                        df_valid_l = df_raw_clean.dropna(subset=[name_col_l])
-                        if not df_valid_l.empty:
-                            mapa_l = (df_valid_l.groupby('row_key_str')[name_col_l].max() * 100).to_dict()
-
-                    # --- 4. PREPARACIÓN Y CONSOLIDACIÓN DEL DATAFRAME FINAL ---
-                    df_notas_completo = notas_pivot.reset_index()
-                    
-                    df_notas_completo['row_key_lookup'] = df_notas_completo['row_key'].astype(str).str.strip()
-                    
-                    if incluir_m:
-                        df_notas_completo['LB Matemática'] = df_notas_completo['row_key_lookup'].map(mapa_m)
-                    if incluir_l:
-                        df_notas_completo['LB Lectoescritura'] = df_notas_completo['row_key_lookup'].map(mapa_l)
-
-                    df_notas_completo = df_notas_completo.drop(columns=['row_key_lookup'])
-
-                    # Convertimos columnas de fecha de tipo Timestamp a formato dd-mm texto
-                    columnas_fechas_str = []
-                    mapeo_columnas = {}
-                    for c in df_notas_completo.columns:
-                        if isinstance(c, pd.Timestamp):
-                            nombre_str = c.strftime('%d-%m')
-                            mapeo_columnas[c] = nombre_str
-                            columnas_fechas_str.append(nombre_str)
-                        else:
-                            mapeo_columnas[c] = c
-
-                    df_notas_completo = df_notas_completo.rename(columns=mapeo_columnas)
-
-                    # Consolidamos el set de columnas que recibirán formato de porcentaje
-                    columnas_porcentaje = ['Promedio ET']
-                    if incluir_m and 'LB Matemática' in df_notas_completo.columns:
-                        columnas_porcentaje.append('LB Matemática')
-                    if incluir_l and 'LB Lectoescritura' in df_notas_completo.columns:
-                        columnas_porcentaje.append('LB Lectoescritura')
-
-                    # Nos aseguramos de que los datos se mantengan numéricos antes del formateador
-                    for col in columnas_porcentaje:
-                        if col in df_notas_completo.columns:
-                            df_notas_completo[col] = pd.to_numeric(df_notas_completo[col], errors='coerce')
-
-                    # 🎨 CORRECCIÓN DE INVISIBILIDAD: color transparente remueve textos 'None' u objetos 'nan' de las fechas de raíz
-                    def style_por_texto(val):
-                        if val == 'Logro': return 'background-color: #2ecc71; color: white' 
-                        elif val == 'Proceso': return 'background-color: #f1c40f; color: black' 
-                        elif val == 'Inicio': return 'background-color: #e74c3c; color: white' 
-                        return 'color: transparent;' 
-
-                    # Diccionario unificado de formatos estrictos por celda para evitar duplicidades
-                    mapeo_formatos = {}
-                    for col in columnas_porcentaje:
-                        mapeo_formatos[col] = lambda x: " " if pd.isna(x) or x is None or str(x).strip() in ["None", "", "nan"] else f"{float(x):.1f}%"
-                    for col_fecha in columnas_fechas_str:
-                        mapeo_formatos[col_fecha] = lambda x: " " if pd.isna(x) or x is None or str(x).strip() in ["None", "", "nan"] else str(x)
-
-                    # --- RENDER DE LA MATRIZ PRINCIPAL FINAL INDESTRUCTIBLE ---
-                    st.dataframe(
-                        df_notas_completo.style.map(style_por_texto, subset=columnas_fechas_str)
-                        .format(mapeo_formatos),
-                        use_container_width=True,
-                        hide_index=True
-                    )
-                    
-                    st.markdown("""
-                    **Referencia de niveles individuales:** 🟢 **Logro** | 🟡 **Proceso** | 🔴 **Inicio** | ⚪ **Sin evaluación / Inasistencia**
-                    """)
-                    
-                    # =========================================================================
-                    # --- MATRIZ SEPARADA ABAJO: RESUMEN ESTADÍSTICO GRUPAL POR FECHA ---
-                    # =========================================================================
-                    st.markdown("---")
-                    st.subheader("📊 Resumen de Logros Grupales por Sesión")
-                    
-                    fila_cant_final = {'Métrica': '📈 Estudiantes en nivel Logro (Nro)'}
-                    fila_pct_final = {'Métrica': '📊 % Logro / Estudiantes Asistentes'}
-                    
-                    for c_orig in columnas_fechas_originales:
-                        c_str = mapeo_columnas[c_orig]
-                        fila_cant_final[c_str] = f"{conteo_logro[c_orig]:.0f}"
-                        fila_pct_final[c_str] = f"{porcentaje_logro[c_orig]:.1f}%"
-
-                    df_cuadro_estadistica = pd.DataFrame([fila_cant_final, fila_pct_final])
-                    columnas_resumen_ordenadas = ['Métrica'] + columnas_fechas_str
-
-                    st.dataframe(
-                        df_cuadro_estadistica[columnas_resumen_ordenadas],
-                        use_container_width=True,
-                        hide_index=True
-                    )
-                else:
-                    st.info("No hay evaluaciones registradas para este grupo en las fechas seleccionadas.")
-            else:
-                st.warning("No hay datos disponibles.")
-
-        # --- TAB 3: ALERTAS DE MONITOREO (SISTEMA INTEGRADO) ---
-        with tab3:
-            st.subheader("🚨 Sistema de Alertas de Rendimiento y Asistencia Crítica")
-            st.markdown("Identificación automatizada de perfiles estudiantiles para priorizar estrategias pedagógicas o intervenciones de nivelación focalizadas.")
+     # 1. Creamos los datos manualmente 
+            data_metas = {
+            "LUNES": ["Nuevo Mundo - 4to (28)", "Kirigueti - 4to A (23)", "Camisea - 4to (24)", "Segakiato - 4to y 5to (14)", "**Total: 89**"],
+            "MARTES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 4to B (22)", "Camisea - 5to (23)", "Segakiato - 4to y 5to (14)", "**Total: 82**"],
+            "JUEVES": ["Nuevo Mundo - 4to (28)", "Kirigueti - 5to A (22)", "Camisea - 4to (24)", "Segakiato - 4to y 5to (14)", "**Total: 88**"],
+            "VIERNES": ["Nuevo Mundo - 5to (23)", "Kirigueti - 5to B (21)", "Camisea - 5to (23)", "Segakiato - 4to y 5to (14)", "**Total: 81**"]
+            }          
+            df_estatico = pd.DataFrame(data_metas)
+            st.table(df_estatico)
+            st.caption("Nota: Esta tabla muestra el número de estudiantes esperados diariamente. El número total de estudiantes registrados en todos los colegios hasta el 03/05/2026 es de 200. No obstante, de acuerdo al horario del proyecto de nivelación, el día lunes y jueves asiste solo 4to de secundaria, mientras que, martes y viernes, solo 5to. Hay excepciones como el colegio de Segakiato en el que hay pocos alumnos por lo cual se invita a ambos grados todos los días. En el caso de Kirigueti, debido a la afluencia de estudiantes, el lunes se enseña a 4to A, martes a 4to B, jueves a 5to A y viernes a 5to B. Los días miércoles y sábados se realizan las clases de consolidación (reforzamiento adicional) dirigida a los estudiantes que requieren más apoyo en ambos grados (4to y 5to). ")
+    
+            st.markdown("---")
+            st.subheader("👥 Tendencia Diaria de Asistencia por Sesión")
             
             if not df_filtered.empty:
-                df_alertas_base = df_filtered.copy()
+                # 1. Agrupamiento y ordenamiento cronológico
+                df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado']).agg({
+                    'Pct_Asistencia': 'mean', 
+                    'Asistencia_Absoluta': 'sum', 
+                    'Alumnos': 'sum'
+                }).reset_index().sort_values('Date')
                 
-                # Consolidamos las variables de logro en una columna de texto única
-                df_alertas_base['nivel_eval'] = df_alertas_base.apply(
-                    lambda r: 'Logro' if r['logro'] == 1 else ('Proceso' if r['proceso'] == 1 else ('Inicio' if r['inicio'] == 1 else None)), 
-                    axis=1
+                # 2. CORRECCIÓN DE ESCALA (0.75 -> 75)
+                # Si el promedio máximo es menor o igual a 1.1, multiplicamos por 100
+                if df_asistencia_diaria['Pct_Asistencia'].max() <= 1.1:
+                    df_asistencia_diaria['Pct_Asistencia'] = df_asistencia_diaria['Pct_Asistencia'] * 100
+                
+                # 3. Configuración del gráfico
+                fig_asist = px.bar(
+                    df_asistencia_diaria, 
+                    x='Date', 
+                    y='Pct_Asistencia', 
+                    color='Grado', 
+                    barmode='group', 
+                    text_auto='.1f', 
+                    title="Porcentaje de estudiantes asistentes (%)",
+                    hover_data=['Asistencia_Absoluta', 'Alumnos'],
+                    labels={
+                        'Asistencia_Absoluta': 'Asistentes Reales', 
+                        'Alumnos': 'Total Inscritos', 
+                        'Pct_Asistencia': 'Asistencia (%)'
+                    } 
                 )
                 
-                # Filtramos para quedarnos con registros que tengan notas de Exit Ticket reales
-                df_eval_validas = df_alertas_base[df_alertas_base['nivel_eval'].notna()].copy()
+                # 4. Ajustes de ejes y espaciado
+                fig_asist.update_xaxes(
+                    type='date', 
+                    tickformat='%d-%b',
+                    dtick="D1" 
+                )
                 
-                if not df_eval_validas.empty:
-                    # Agrupamos por la clave de estudiante
-                    grupo_estudiantes = df_eval_validas.groupby(['row_key', 'nombre'])
-                    
-                    resumen_alertas = grupo_estudiantes.agg(
-                        Sesiones_Evaluadas=('nivel_eval', 'count'),
-                        Niveles_Unicos=('nivel_eval', lambda x: set(x)),
-                        Primer_Nivel=('nivel_eval', 'first')
-                    ).reset_index()
-                    
-                    # 🔍 PROCESAMIENTO MATEMÁTICO DE LOS 4 PERFILES:
-                    # 1) Estudiantes que solo asistieron una vez y obtuvieron nivel Inicio/Proceso
-                    p1 = resumen_alertas[(resumen_alertas['Sesiones_Evaluadas'] == 1) & (resumen_alertas['Primer_Nivel'].isin(['Inicio', 'Proceso']))]
-                    
-                    # 2) Estudiantes que solo asistieron una vez y obtuvieron nivel Logro
-                    p2 = resumen_alertas[(resumen_alertas['Sesiones_Evaluadas'] == 1) & (resumen_alertas['Primer_Nivel'] == 'Logro')]
-                    
-                    # 3) Estudiantes recurrentes que en TODAS sus evaluaciones obtienen nivel Inicio
-                    p3 = resumen_alertas[(resumen_alertas['Sesiones_Evaluadas'] > 1) & (resumen_alertas['Niveles_Unicos'] == {'Inicio'})]
-                    
-                    # 4) Estudiantes recurrentes que en TODAS sus evaluaciones obtienen nivel Logro
-                    p4 = resumen_alertas[(resumen_alertas['Sesiones_Evaluadas'] > 1) & (resumen_alertas['Niveles_Unicos'] == {'Logro'})]
-                    
-                    # --- INTERFAZ VISUAL DEL PANEL DE CONTROL ---
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.error(f"⚠️ 1) Única Asistencia - Nivel Inicio/Proceso ({len(p1)})")
-                        st.caption("Alumnos que registran una sola participación y no lograron el nivel esperado. Prioridad alta de contactación.")
-                        if not p1.empty:
-                            st.dataframe(p1[['row_key', 'nombre', 'Primer_Nivel']].rename(columns={'row_key': 'ID', 'nombre': 'Estudiante', 'Primer_Nivel': 'Nivel Obtenido'}), use_container_width=True, hide_index=True)
-                        else:
-                            st.success("No se registran alumnos en este perfil.")
-                            
-                        st.markdown("---")
-                        st.warning(f"🛑 3) Persistencia en Nivel Inicio ({len(p3)})")
-                        st.caption("Estudiantes constantes que en el 100% de las sesiones evaluadas permanecen estancados en el nivel inicial.")
-                        if not p3.empty:
-                            st.dataframe(p3[['row_key', 'nombre', 'Sesiones_Evaluadas']].rename(columns={'row_key': 'ID', 'nombre': 'Estudiante', 'Sesiones_Evaluadas': 'Evaluaciones en Inicio'}), use_container_width=True, hide_index=True)
-                        else:
-                            st.success("No se registran alumnos en este perfil.")
-
-                    with col2:
-                        st.info(f"ℹ️ 2) Única Asistencia - Nivel Logro ({len(p2)})")
-                        st.caption("Alumnos con alta capacidad que alcanzaron el nivel de logro en su única sesión, pero discontinuaron su asistencia.")
-                        if not p2.empty:
-                            st.dataframe(p2[['row_key', 'nombre', 'Primer_Nivel']].rename(columns={'row_key': 'ID', 'nombre': 'Estudiante', 'Primer_Nivel': 'Nivel Obtenido'}), use_container_width=True, hide_index=True)
-                        else:
-                            st.success("No se registran alumnos en este perfil.")
-                            
-                        st.markdown("---")
-                        st.success(f"🌟 4) Excelencia Sostenida - Nivel Logro ({len(p4)})")
-                        st.caption("Estudiantes destacados que mantienen un estándar perfecto de rendimiento (100% Logro) en todo el ciclo.")
-                        if not p4.empty:
-                            st.dataframe(p4[['row_key', 'nombre', 'Sesiones_Evaluadas']].rename(columns={'row_key': 'ID', 'nombre': 'Estudiante', 'Sesiones_Evaluadas': 'Evaluaciones en Logro'}), use_container_width=True, hide_index=True)
-                        else:
-                            st.success("No se registran alumnos en este perfil.")
-                else:
-                    st.info("No hay suficientes evaluaciones históricas con notas válidas para estructurar las alertas de rendimiento.")
+                fig_asist.update_layout(
+                    yaxis_range=[0, 105], 
+                    yaxis_title="Asistencia (%)",
+                    bargap=0.25,         
+                    bargroupgap=0.1      
+                )
+                
+                st.plotly_chart(fig_asist, use_container_width=True)
+                st.info("💡 **¿Cómo interpretar este gráfico?:** Cada barra representa el porcentaje de estudiantes asistentes respecto del total registrado en las listas de clase.")
             else:
-                st.warning("No hay datos disponibles para procesar el panel de alertas.")
+                st.warning("No hay datos para graficar con los filtros seleccionados.")
+
+            # --- TOTAL DE ESTUDIANTES ASISTENTES POR DÍA ---
+            st.markdown("---")
+            st.subheader("👥 Cantidad Total de Estudiantes Asistentes por Sesión")
+            
+            if not df_filtered.empty:
+                # 1. Agrupamos por Fecha e Institución
+                df_asistencia_total = df_filtered.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
+                
+                # 2. Calculamos el total por día para las etiquetas superiores
+                df_sumas_diarias = df_asistencia_total.groupby('Date')['Asistencia_Absoluta'].sum().reset_index()
+                
+                # 3. Creamos el gráfico base
+                fig_total_asist = px.bar(
+                    df_asistencia_total,
+                    x='Date',
+                    y='Asistencia_Absoluta',
+                    color='Institucion',
+                    title="Número Total de Estudiantes en Clase",
+                    labels={'Asistencia_Absoluta': 'Número de Estudiantes', 'Date': 'Fecha'},
+                    text_auto=True, 
+                    barmode='stack'
+                )
+
+                # 4. AGREGAMOS LAS ETIQUETAS DEL TOTAL ENCIMA DE LAS BARRAS
+                fig_total_asist.add_scatter(
+                    x=df_sumas_diarias['Date'],
+                    y=df_sumas_diarias['Asistencia_Absoluta'],
+                    mode='text',
+                    text=df_sumas_diarias['Asistencia_Absoluta'],
+                    textposition='top center',
+                    showlegend=False,
+                    hoverinfo='skip' # Para que no interfiera con el hover de las barras
+                )
+
+                # 5. Configuración estética
+                fig_total_asist.update_layout(
+                    xaxis_title="Fecha",
+                    yaxis_title="Cantidad de Estudiantes",
+                    legend_title="Institución",
+                    hovermode="x unified",
+                    yaxis_range=[0, df_sumas_diarias['Asistencia_Absoluta'].max() * 1.15] # Espacio extra para que el texto no se corte
+                )
+
+                st.plotly_chart(fig_total_asist, use_container_width=True)
+                
+                st.info("💡 **Interpretación:** El número sobre cada barra indica el total global de asistentes del día. Los números internos muestran el aporte de cada institución.")
+            
+            # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
+            st.markdown("---")
+            st.subheader("📈 Análisis de Tendencia de Asistencia Diaria (Promedio móvil de 3 sesiones)")
+
+            if not df_filtered.empty:
+                # 1. Crear el DataFrame base según la selección
+                if sel_inst == 'Todas':
+                    # Datos por cada institución
+                    df_plot = df_filtered.groupby(['Date', 'Institucion'])['Pct_Asistencia'].mean().reset_index()
+                    
+                    # Datos del Promedio General
+                    df_promedio = df_filtered.groupby('Date')['Pct_Asistencia'].mean().reset_index()
+                    df_promedio['Institucion'] = 'PROMEDIO GENERAL'
+                    
+                    # Unimos ambos
+                    df_final = pd.concat([df_plot, df_promedio], ignore_index=True)
+                else:
+                    # Solo el colegio seleccionado
+                    df_final = df_filtered.groupby(['Date'])['Pct_Asistencia'].mean().reset_index()
+                    df_final['Institucion'] = sel_inst
+
+                # 2. Corrección de escala (0-100)
+                if df_final['Pct_Asistencia'].max() <= 1.1:
+                    df_final['Pct_Asistencia'] = df_final['Pct_Asistencia'] * 100
+
+                # 3. Cálculo de Media Móvil (Importante: ordenar por fecha)
+                df_final = df_final.sort_values(['Institucion', 'Date'])
+                df_final['Media_Movil'] = df_final.groupby('Institucion')['Pct_Asistencia'].transform(
+                    lambda x: x.rolling(window=3, min_periods=1).mean()
+                )
+
+                # 4. Definición de Colores Intensos (Personalizados)
+                colores_grafico = {
+                    'I.E Monseñor Javier Aris Huarte (Kirigueti)': '#FF0000', # Rojo intenso
+                    'I.E Carlos Ríos Ríos (Nuevo Mundo)': '#0000FF',         # Azul fuerte
+                    'I.E Juan Santos Atahualpa (Camisea)': '#008000',         # Verde
+                    'I.E N° 64518 (Segakiato)': '#FFD700',                    # Amarillo/Oro
+                    'PROMEDIO GENERAL': '#333333'                             # Gris oscuro
+                }
+
+                # 5. Creación del gráfico
+                fig_comparativo = px.line(
+                    df_final, 
+                    x='Date', 
+                    y='Media_Movil', 
+                    color='Institucion',
+                    line_shape='spline',
+                    title="Porcentaje de estudiantes asistentes (Media móvil de 3 sesiones)",
+                    labels={'Media_Movil': 'Asistencia (%)', 'Date': 'Fecha'},
+                    color_discrete_map=colores_grafico 
+                )
+
+                if 'PROMEDIO GENERAL' in df_final['Institucion'].values:
+                    fig_comparativo.update_traces(
+                        patch={"line": {"width": 5, "dash": 'dot'}}, 
+                        selector={'name': 'PROMEDIO GENERAL'}
+                    )
+                
+                fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
+                st.plotly_chart(fig_comparativo, use_container_width=True)
+                
+                st.info("💡 **¿Cómo interpretar este gráfico?:** Las líneas representa tendencias suavizadas obtenidas a partir del promedio de los porcentajes de asistencia de las última tres sesiones. El promedio general aparece en línes punteadas oscuras.")
+
+
+        with st.expander("📂 Ver datos detallados de asistencia"):
+                df_tabla_asist = df_filtered[['Date', 'Institucion', 'Grado', 'Asistencia_Absoluta', 'Alumnos', 'Pct_Asistencia']].copy()
+                df_tabla_asist['Date'] = df_tabla_asist['Date'].dt.strftime('%d-%m-%Y')
+                st.dataframe(df_tabla_asist.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
+
+            # =========================================================================
+            # --- TABLA CONTINUA DE INCIDENCIAS DE CLASE ---
+            # =========================================================================
+        st.markdown("---")
+        st.subheader("💬 Registro Centralizado de Incidencias y Observaciones de Aula")
+            
+        if 'comment_class' in df_filtered.columns:
+                df_incidencias = df_filtered.copy()
+                
+                # Evaluamos de forma segura el texto de las observaciones de aula
+                txt_class_limpio = df_incidencias['comment_class'].astype(str).str.strip()
+                
+                # FILTRO: Conservamos solo los días/secciones donde el docente escribió una incidencia real
+                df_tabla_incidencias = df_incidencias[
+                    (df_incidencias['comment_class'].notna()) & 
+                    (txt_class_limpio != "") & 
+                    (txt_class_limpio != "nan") & 
+                    (txt_class_limpio != "None")
+                ].copy()
+                
+                if not df_tabla_incidencias.empty:
+                    # Ordenamos cronológicamente (más reciente arriba)
+                    df_tabla_incidencias = df_tabla_incidencias.sort_values(by='Date', ascending=False)
+                    df_tabla_incidencias['Fecha'] = df_tabla_incidencias['Date'].dt.strftime('%d-%b-%Y')
+                    df_tabla_incidencias['comment_class'] = df_tabla_incidencias['comment_class'].astype(str).replace(['nan', 'None'], '')
+                    
+                    # Estructuramos las columnas visibles de manera clara para auditoría grupal
+                    df_render_incidencias = df_tabla_incidencias[['Fecha', 'Institucion', 'Grado', 'Curso', 'Sesion', 'comment_class']].rename(columns={
+                        'comment_class': 'Incidencias / Observaciones de la Clase',
+                        'Sesion': 'Tipo de Sesión'
+                    })
+                    
+                    st.write(f"Se encontraron **{len(df_render_incidencias)}** reportes grupales en el periodo seleccionado:")
+                    st.dataframe(
+                        df_render_incidencias,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                else:
+                    st.info("✨ No se registraron incidencias grupales para los filtros seleccionados en este rango de fechas.")
+        else:
+                st.warning("⚠️ La variable 'comment_class' no fue encontrada en el archivo CSV de clases.")
+            # =========================================================================
+
+ # --- TAB 2: RENDIMIENTO ACADÉMICO ---
+    with tab2:
+        st.header("🎯 Rendimiento Académico (Exit Tickets)")
+        if not df_filtered.empty:
+            # --- 1. Cálculos de Métricas ---
+            
+            # Total de sesiones en el periodo filtrado (independientemente de si hubo nota o no)
+            total_sesiones_periodo = df_filtered.groupby(['Date', 'Institucion', 'Sesion']).ngroups
+            
+            # Sesiones que SÍ tienen evaluación (Pct_Puntaje no es nulo)
+            dias_con_evaluacion = df_filtered[df_filtered['Pct_Puntaje'].notna()]
+            numero_aplicados = dias_con_evaluacion.groupby(['Date', 'Institucion', 'Sesion']).ngroups
+            
+            # CÁLCULO NUEVO: Porcentaje de aplicación
+            pct_aplicacion = (numero_aplicados / total_sesiones_periodo * 100) if total_sesiones_periodo > 0 else 0
+            
+            # Promedio de puntaje
+            prom_puntaje_raw = df_filtered['Pct_Puntaje'].mean()
+            promedio_puntaje_real = prom_puntaje_raw * 100 if prom_puntaje_raw <= 1.0 else prom_puntaje_raw
+            
+            # Estudiantes en Logro
+            total_est_eval = df_filtered[['Logro', 'Proceso', 'Inicio']].sum().sum()
+            total_est_logro = df_filtered['Logro'].sum()
+            promedio_logro_real = (total_est_logro / total_est_eval * 100) if total_est_eval > 0 else 0
+
+            # --- 2. Render de Métricas (Ahora con 4 columnas) ---
+            m1, m2, m3, m4 = st.columns(4)
+            
+            m1.metric("Sesiones con Evaluación", f"{numero_aplicados}", help="Cada sesión es culminada con una evaluación de salida (exit ticket)")
+            
+            # La nueva métrica conectada a la anterior
+            m2.metric("Sesiones con Evaluación (%)", f"{pct_aplicacion:.1f}%", 
+                      help="Porcentaje de sesiones realizadas que cuentan con un Exit Ticket registrado.")
+            
+            m3.metric("Puntaje Promedio", f"{promedio_puntaje_real:.1f}%", help="Porcentaje del exit ticket completado correctamente. Cada exit ticket tiene como máximo 5 preguntas.")
+            
+            m4.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%", help="Un estudiante alcanza el nivel de logro cuando responde correctamente el 80% o más del exit ticket. Por ejemplo, si la evaluación tiene 5 preguntas en total, el estudiante debe responder 4 o más para ser considerado en ese nivel.")
+
+            st.markdown("---")
+
+            # 3. Gráfico de Líneas (Puntaje)
+            st.subheader("🌟 Evolución de Respuestas Correctas en el Exit Ticket (%)")
+            df_notas = df_filtered.groupby(['Date', 'Grado'])['Pct_Puntaje'].mean().reset_index()
+            # Corrección de escala para el gráfico
+            df_notas['Pct_Puntaje'] = df_notas['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
+            
+            fig_linea = px.line(df_notas, x='Date', y='Pct_Puntaje', color='Grado', markers=True)
+            fig_linea.update_traces(connectgaps=True)
+            fig_linea.update_layout(yaxis_range=[0, 105], yaxis_title="Puntaje (%)",title="Puntaje Promedio del Exit Ticket (%)")
+            st.plotly_chart(fig_linea, use_container_width=True)
+
+            # 4. Distrubución de Resultados en el exit ticket
+            st.subheader("📊 Distribución de Niveles de Resultado en el Exit Ticket ")
+            
+            # Función auxiliar para agrupar y formatear los temas avanzados en la misma fila/fecha
+            def consolidar_temas_fecha(row):
+                tema_a = str(row['nombre_tema_A']).strip() if pd.notna(row['nombre_tema_A']) else ""
+                tema_b = str(row['nombre_tema_B']).strip() if pd.notna(row['nombre_tema_B']) else ""
+                if tema_a and tema_b and tema_a != "nan" and tema_b != "nan" and tema_b != "":
+                    return f"{tema_a} / {tema_b}"
+                elif tema_a and tema_a != "nan" and tema_a != "":
+                    return tema_a
+                elif tema_b and tema_b != "nan" and tema_b != "":
+                    return tema_b
+                return "No especificado"
+
+            df_rendimiento_temas = df_filtered.copy()
+            df_rendimiento_temas['Tema_Dictado'] = df_rendimiento_temas.apply(consolidar_temas_fecha, axis=1)
+
+            # Función para combinar de forma inteligente los temas únicos de diferentes colegios sin duplicar
+            def combinar_temas_unicos(series):
+                temas_limpios = [str(t).strip() for t in series if pd.notna(t) and str(t).strip() != "" and str(t).strip() != "nan" and str(t).strip() != "No especificado"]
+                temas_unicos = sorted(list(set(temas_limpios)))  # Elimina duplicados si coinciden en el mismo tema
+                if not temas_unicos:
+                    return "No especificado"
+                return ", ".join(temas_unicos)  # Los une en una sola línea de texto para el tooltip
+
+            # Agrupamos por fecha obteniendo la suma de niveles y la combinación de todos los temas de ese día
+            df_counts = df_rendimiento_temas.groupby('Date').agg({
+                'Logro': 'sum',
+                'Proceso': 'sum',
+                'Inicio': 'sum',
+                'Tema_Dictado': combinar_temas_unicos  # <-- Reemplazamos 'first' por nuestra función inteligente
+            }).reset_index()
+            
+            df_counts['Total'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
+            
+            for col in ['Logro', 'Proceso', 'Inicio']:
+                df_counts[col] = (df_counts[col] / df_counts['Total']) * 100
+            
+            # Hacemos el melt reteniendo la columna de la etiqueta temática consolidada
+            df_melt = df_counts.melt(
+                id_vars=['Date', 'Tema_Dictado'], 
+                value_vars=['Logro', 'Proceso', 'Inicio'], 
+                var_name='Nivel', 
+                value_name='Porcentaje'
+            )
+            
+            fig_barras = px.bar(
+                df_melt, 
+                x='Date', 
+                y='Porcentaje', 
+                color='Nivel', 
+                barmode='stack', 
+                text_auto='.1f', 
+                title="Porcentaje de estudiantes asistentes por nivel de resultado en el Exit Ticket (%)",
+                color_discrete_map={'Logro': '#00CC96', 'Proceso': '#FECB52', 'Inicio': '#EF553B'},
+                hover_data={'Tema_Dictado': True, 'Porcentaje': ':.1f', 'Nivel': True, 'Date': True}
+            )
+            
+            # Estructuración explícita de las cabeceras de información contextual emergente
+            fig_barras.update_traces(
+                hovertemplate="<b>Fecha:</b> %{x}<br><b>Nivel:</b> %{customdata[1]}<br><b>Porcentaje:</b> %{y:.1f}%<br><b>Tema Avanzado:</b> %{customdata[0]}<extra></extra>"
+            )
+            
+            fig_barras.update_layout(yaxis_range=[0, 105], yaxis_title="Porcentaje (%)", xaxis_title="Fecha")
+            st.plotly_chart(fig_barras, use_container_width=True)
+
+            st.info("""💡 **Guía de Interpretación:** La barra representa el 100% de los asistentes. Logro (≥80% de respuestas correctas), Proceso (50-79% de respuestas correctas), Inicio (<50% de respuestas correctas). Pasa el cursor por encima de cualquier barra para observar qué contenido temático se impartió.""")
+
+            st.markdown("---")
+
+            # 5. Tabla Raw Data (Tab 2)
+            with st.expander("📂 Ver datos detallados de rendimiento"):
+                cols_raw = ['Date', 'Institucion', 'Grado', 'Alumnos', 'Asistencia_Absoluta', 'Logro', 'Proceso', 'Inicio', 'Pct_Puntaje']
+                df_t = df_filtered[cols_raw].copy()
+                df_t['Date'] = df_t['Date'].dt.strftime('%d-%m-%Y')
+                # Formatear el puntaje a % en la tabla
+                df_t['Pct_Puntaje'] = df_t['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
+                st.dataframe(df_t.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
+
+# --- TAB 3: TALLERES ---
+    with tab3:
+        st.header("🌈 Monitoreo de Asistencia a Talleres")
+        
+        colores_intensos = {
+            'I.E Monseñor Javier Aris Huarte (Kirigueti)': '#FF0000', 
+            'I.E Carlos Ríos Ríos (Nuevo Mundo)': '#0000FF',         
+            'I.E Juan Santos Atahualpa (Camisea)': '#008000',         
+            'I.E N° 64518 (Segakiato)': "#D8DF0B"                    
+        }
+
+        # Función auxiliar para formatear los temas avanzados en la misma fila/fecha del taller
+        def consolidar_temas_fecha_taller(row):
+            tema_a = str(row['nombre_tema_A']).strip() if ('nombre_tema_A' in row and pd.notna(row['nombre_tema_A'])) else ""
+            tema_b = str(row['nombre_tema_B']).strip() if ('nombre_tema_B' in row and pd.notna(row['nombre_tema_B'])) else ""
+            if tema_a and tema_b and tema_a != "nan" and tema_b != "nan" and tema_b != "":
+                return f"{tema_a} / {tema_b}"
+            elif tema_a and tema_a != "nan" and tema_a != "":
+                return tema_a
+            elif tema_b and tema_b != "nan" and tema_b != "":
+                return tema_b
+            return "No especificado"
+
+        # Función para combinar de forma inteligente los temas únicos de diferentes colegios sin duplicar
+        def combinar_temas_taller_unicos(series):
+            temas_limpios = [str(t).strip() for t in series if pd.notna(t) and str(t).strip() != "" and str(t).strip() != "nan" and str(t).strip() != "No especificado"]
+            temas_unicos = sorted(list(set(temas_limpios)))
+            if not temas_unicos:
+                return "No especificado"
+            return ", ".join(temas_unicos)
+
+        # --- 1. TALLER DE HABILIDADES SOCIOEMOCIONALES ---
+        taller_target = "Taller de Habilidades Socioemocionales"
+        df_final_talleres = df_talleres_filtered[
+            df_talleres_filtered['Curso'].str.contains('Habilidades Socioemocionales', case=False, na=False) |
+            df_talleres_filtered['Curso'].str.contains('Taller de Hab', case=False, na=False)
+        ].copy()
+        
+        if not df_final_talleres.empty:
+            st.subheader(f"❤️ {taller_target}")
+            
+            # Asignamos la columna consolidada de temas
+            df_final_talleres['Tema_Taller'] = df_final_talleres.apply(consolidar_temas_fecha_taller, axis=1)
+            
+            # Agrupamos por Fecha E Institución incluyendo la consolidación inteligente de temas
+            df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion']).agg({
+                'Asistencia_Absoluta': 'sum',
+                'Tema_Taller': combinar_temas_taller_unicos
+            }).reset_index()
+            
+            df_asist_plot = df_asist_plot.sort_values('Date')
+
+            # Creamos el gráfico vinculando la variable temática al hover_data
+            fig_taller = px.bar(
+                df_asist_plot, 
+                x='Date', 
+                y='Asistencia_Absoluta',
+                color='Institucion',  
+                barmode='group',      
+                text_auto=True,
+                title="Asistencia por institución, grado y fecha",
+                color_discrete_map=colores_intensos,
+                hover_data={'Tema_Taller': True, 'Asistencia_Absoluta': True, 'Institucion': True, 'Date': '|%d-%b'},
+                labels={
+                    'Tema_Taller': 'Tema del Taller',
+                    'Asistencia_Absoluta': 'Estudiantes Asistentes',
+                    'Institucion': 'Institución',
+                    'Date': 'Fecha'
+                }
+            )
+
+            fig_taller.update_xaxes(type='date', tickformat='%d-%b', dtick="D1")
+            fig_taller.update_layout(
+                xaxis_title="Fecha de Sesión",
+                yaxis_title="Número de Estudiantes",
+                legend_title="Institución",
+                bargap=0.2 
+            )
+            st.plotly_chart(fig_taller, use_container_width=True)
+            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}. Pasa el cursor sobre las barras para observar el contenido temático desarrollado.")
+        else:
+            st.warning("⚠️ No se encontraron registros de talleres de habilidades socioemocionales para los filtros seleccionados.")
+
+        # --- 2. TALLER DE IDENTIDAD CULTURAL ---
+        taller_cultural = "Taller de Identidad Cultural"
+        df_final_talleres_cultural = df_talleres_filtered[
+            df_talleres_filtered['Curso'].str.contains('Identidad Cultural', case=False, na=False) |
+            df_talleres_filtered['Curso'].str.contains('Identidad', case=False, na=False)
+        ].copy()
+        
+        if not df_final_talleres_cultural.empty:
+            st.markdown("---")
+            st.subheader(f"🌍 {taller_cultural}")
+            
+            # Asignamos la columna consolidada de temas
+            df_final_talleres_cultural['Tema_Taller'] = df_final_talleres_cultural.apply(consolidar_temas_fecha_taller, axis=1)
+            
+            # Agrupamos por Fecha E Institución incluyendo la consolidación inteligente de temas
+            df_asist_plot_cultural = df_final_talleres_cultural.groupby(['Date', 'Institucion']).agg({
+                'Asistencia_Absoluta': 'sum',
+                'Tema_Taller': combinar_temas_taller_unicos
+            }).reset_index()
+            
+            df_asist_plot_cultural = df_asist_plot_cultural.sort_values('Date')
+
+            # Creamos el gráfico de identidad cultural vinculando el tema al hover_data
+            fig_cultural = px.bar(
+                df_asist_plot_cultural, 
+                x='Date', 
+                y='Asistencia_Absoluta',
+                color='Institucion',  
+                barmode='group',      
+                text_auto=True,
+                title="Asistencia por institución, grado y fecha",
+                color_discrete_map=colores_intensos,
+                hover_data={'Tema_Taller': True, 'Asistencia_Absoluta': True, 'Institucion': True, 'Date': '|%d-%b'},
+                labels={
+                    'Tema_Taller': 'Tema del Taller',
+                    'Asistencia_Absoluta': 'Estudiantes Asistentes',
+                    'Institucion': 'Institución',
+                    'Date': 'Fecha'
+                }
+            )
+
+            fig_cultural.update_xaxes(type='date', tickformat='%d-%b', dtick="D1")
+            fig_cultural.update_layout(
+                xaxis_title="Fecha de Sesión",
+                yaxis_title="Número de Estudiantes",
+                legend_title="Institución",
+                bargap=0.2
+            )
+            st.plotly_chart(fig_cultural, use_container_width=True)
+            st.info(f"💡 Visualizando datos para {sel_inst} y Grado: {sel_grado}. Pasa el cursor sobre las barras para observar el contenido temático desarrollado.")
+        else:
+            st.warning("⚠️ No se encontraron registros de talleres de identidad cultural para los filtros seleccionados.")
