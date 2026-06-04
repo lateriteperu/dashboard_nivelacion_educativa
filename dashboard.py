@@ -175,12 +175,14 @@ if df_raw is not None:
             if not df_filtered.empty:
                 df_asistencia_diaria = df_filtered.groupby(['Date', 'Grado']).agg({
                     'Pct_Asistencia': 'mean', 'Asistencia_Absoluta': 'sum', 'Alumnos': 'sum'
-                }).reset_index().sort_values('Date')
+                }).reset_index()
+                
+                # REGLA: Ordenamos cronológicamente por objeto Datetime antes de generar el texto
+                df_asistencia_diaria = df_asistencia_diaria.sort_values('Date')
                 
                 if df_asistencia_diaria['Pct_Asistencia'].max() <= 1.1:
                     df_asistencia_diaria['Pct_Asistencia'] = df_asistencia_diaria['Pct_Asistencia'] * 100
                 
-                # Convertimos la fecha a texto para obligar a Plotly a no generar saltos de tiempo
                 df_asistencia_diaria['Fecha_Str'] = df_asistencia_diaria['Date'].dt.strftime('%d-%b')
 
                 fig_asist = px.bar(
@@ -189,8 +191,8 @@ if df_raw is not None:
                     hover_data={'Asistencia_Absoluta': True, 'Alumnos': True, 'Fecha_Str': False},
                     labels={'Asistencia_Absoluta': 'Asistentes Reales', 'Alumnos': 'Total Inscritos', 'Pct_Asistencia': 'Asistencia (%)', 'Fecha_Str': 'Fecha'} 
                 )
-                # CORRECCIÓN DE RECESO: Forzamos el tipo de eje X a categórico
-                fig_asist.update_xaxes(type='category', categoryorder='category ascending')
+                # Mantener orden estricto de aparición del DataFrame (que ya está cronológico)
+                fig_asist.update_xaxes(type='category', categoryorder='array', categoryarray=df_asistencia_diaria['Fecha_Str'].unique())
                 fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)", bargap=0.25, bargroupgap=0.1)
                 st.plotly_chart(fig_asist, use_container_width=True)
 
@@ -199,9 +201,12 @@ if df_raw is not None:
             st.subheader("👥 Cantidad Total de Estudiantes Asistentes por Sesión")
             
             if not df_filtered.empty:
-                df_asistencia_total = df_filtered.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index().sort_values('Date')
+                df_asistencia_total = df_filtered.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
+                # Ordenamos cronológicamente antes
+                df_asistencia_total = df_asistencia_total.sort_values('Date')
                 df_asistencia_total['Fecha_Str'] = df_asistencia_total['Date'].dt.strftime('%d-%b')
-                df_sumas_diarias = df_asistencia_total.groupby('Fecha_Str')['Asistencia_Absoluta'].sum().reset_index()
+                
+                df_sumas_diarias = df_asistencia_total.groupby(['Date', 'Fecha_Str'])['Asistencia_Absoluta'].sum().reset_index().sort_values('Date')
                 
                 fig_total_asist = px.bar(
                     df_asistencia_total, x='Fecha_Str', y='Asistencia_Absoluta', color='Institucion',
@@ -212,12 +217,11 @@ if df_raw is not None:
                     x=df_sumas_diarias['Fecha_Str'], y=df_sumas_diarias['Asistencia_Absoluta'],
                     mode='text', text=df_sumas_diarias['Asistencia_Absoluta'], textposition='top center', showlegend=False, hoverinfo='skip'
                 )
-                # CORRECCIÓN DE RECESO: Forzamos categórico
-                fig_total_asist.update_xaxes(type='category', categoryorder='category ascending')
+                fig_total_asist.update_xaxes(type='category', categoryorder='array', categoryarray=df_asistencia_total['Fecha_Str'].unique())
                 fig_total_asist.update_layout(yaxis_title="Cantidad de Estudiantes", legend_title="Institución", hovermode="x unified", yaxis_range=[0, df_sumas_diarias['Asistencia_Absoluta'].max() * 1.15])
                 st.plotly_chart(fig_total_asist, use_container_width=True)
             
-            # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL (COMPARATIVO) ---
+            # --- GRÁFICO DE ASISTENCIA CON PROMEDIO MÓVIL ---
             st.markdown("---")
             st.subheader("📈 Análisis de Tendencia de Asistencia Diaria (Promedio móvil de 3 sesiones)")
 
@@ -234,6 +238,7 @@ if df_raw is not None:
                 if df_final['Pct_Asistencia'].max() <= 1.1:
                     df_final['Pct_Asistencia'] = df_final['Pct_Asistencia'] * 100
 
+                # Aseguramos orden cronológico estricto
                 df_final = df_final.sort_values(['Institucion', 'Date'])
                 df_final['Fecha_Str'] = df_final['Date'].dt.strftime('%d-%b')
                 
@@ -249,6 +254,9 @@ if df_raw is not None:
                     'PROMEDIO GENERAL': '#333333'                             
                 }
 
+                # Generamos lista de ordenación basada únicamente en la secuencia cronológica de las fechas únicas
+                orden_fechas_linea = df_final.sort_values('Date')['Fecha_Str'].unique()
+
                 fig_comparativo = px.line(
                     df_final, x='Fecha_Str', y='Media_Movil', color='Institucion', line_shape='spline',
                     title="Porcentaje de estudiantes asistentes (Media móvil de 3 sesiones)",
@@ -257,8 +265,7 @@ if df_raw is not None:
                 if 'PROMEDIO GENERAL' in df_final['Institucion'].values:
                     fig_comparativo.update_traces(patch={"line": {"width": 5, "dash": 'dot'}}, selector={'name': 'PROMEDIO GENERAL'})
                 
-                # CORRECCIÓN DE RECESO: Forzamos categórico
-                fig_comparativo.update_xaxes(type='category', categoryorder='category ascending')
+                fig_comparativo.update_xaxes(type='category', categoryorder='array', categoryarray=orden_fechas_linea)
                 fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
                 st.plotly_chart(fig_comparativo, use_container_width=True)
 
@@ -312,14 +319,15 @@ if df_raw is not None:
 
             # Gráfico de Líneas (Puntaje)
             st.subheader("🌟 Evolución de Respuestas Correctas en el Exit Ticket (%)")
-            df_notas = df_filtered.groupby(['Date', 'Grado'])['Pct_Puntaje'].mean().reset_index().sort_values('Date')
+            df_notas = df_filtered.groupby(['Date', 'Grado'])['Pct_Puntaje'].mean().reset_index()
+            # Ordenamos cronológicamente
+            df_notas = df_notas.sort_values('Date')
             df_notas['Pct_Puntaje'] = df_notas['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
             df_notas['Fecha_Str'] = df_notas['Date'].dt.strftime('%d-%b')
             
             fig_linea = px.line(df_notas, x='Fecha_Str', y='Pct_Puntaje', color='Grado', markers=True)
             fig_linea.update_traces(connectgaps=True)
-            # CORRECCIÓN DE RECESO: Forzamos categórico
-            fig_linea.update_xaxes(type='category', categoryorder='category ascending')
+            fig_linea.update_xaxes(type='category', categoryorder='array', categoryarray=df_notas['Fecha_Str'].unique())
             fig_linea.update_layout(yaxis_range=[0, 105], yaxis_title="Puntaje (%)", title="Puntaje Promedio del Exit Ticket (%)", xaxis_title="Fecha")
             st.plotly_chart(fig_linea, use_container_width=True)
 
@@ -337,14 +345,17 @@ if df_raw is not None:
             df_rendimiento_temas = df_filtered.copy()
             df_rendimiento_temas['Tema_Dictado'] = df_rendimiento_temas.apply(consolidar_temas_fecha, axis=1)
 
-            def combinar_temas_unicos(series):
+            def combiner_temas_unicos(series):
                 temas_limpios = [str(t).strip() for t in series if pd.notna(t) and str(t).strip() != "" and str(t).strip() != "nan" and str(t).strip() != "No especificado"]
                 temas_unicos = sorted(list(set(temas_limpios)))
                 return ", ".join(temas_unicos) if temas_unicos else "No especificado"
 
             df_counts = df_rendimiento_temas.groupby('Date').agg({
-                'Logro': 'sum', 'Proceso': 'sum', 'Inicio': 'sum', 'Tema_Dictado': combinar_temas_unicos
-            }).reset_index().sort_values('Date')
+                'Logro': 'sum', 'Proceso': 'sum', 'Inicio': 'sum', 'Tema_Dictado': combiner_temas_unicos
+            }).reset_index()
+            
+            # Ordenamos cronológicamente antes del string
+            df_counts = df_counts.sort_values('Date')
             
             df_counts['Total'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
             for col in ['Logro', 'Proceso', 'Inicio']:
@@ -361,8 +372,7 @@ if df_raw is not None:
             )
             fig_barras.update_traces(hovertemplate="<b>Fecha:</b> %{x}<br><b>Nivel:</b> %{customdata[1]}<br><b>Porcentaje:</b> %{y:.1f}%<br><b>Tema Avanzado:</b> %{customdata[0]}<extra></extra>")
             
-            # CORRECCIÓN DE RECESO: Forzamos categórico
-            fig_barras.update_xaxes(type='category', categoryorder='category ascending')
+            fig_barras.update_xaxes(type='category', categoryorder='array', categoryarray=df_counts['Fecha_Str'].unique())
             fig_barras.update_layout(yaxis_range=[0, 105], yaxis_title="Porcentaje (%)", xaxis_title="Fecha")
             st.plotly_chart(fig_barras, use_container_width=True)
 
@@ -405,7 +415,9 @@ if df_raw is not None:
             
             df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion']).agg({
                 'Asistencia_Absoluta': 'sum', 'Tema_Taller': combinar_temas_taller_unicos
-            }).reset_index().sort_values('Date')
+            }).reset_index()
+            # Ordenamos cronológicamente
+            df_asist_plot = df_asist_plot.sort_values('Date')
             df_asist_plot['Fecha_Str'] = df_asist_plot['Date'].dt.strftime('%d-%b')
 
             fig_taller = px.bar(
@@ -414,8 +426,7 @@ if df_raw is not None:
                 hover_data={'Tema_Taller': True, 'Asistencia_Absoluta': True, 'Institucion': True, 'Fecha_Str': False},
                 labels={'Tema_Taller': 'Tema del Taller', 'Asistencia_Absoluta': 'Estudiantes Asistentes', 'Fecha_Str': 'Fecha'}
             )
-            # CORRECCIÓN DE RECESO: Forzamos categórico
-            fig_taller.update_xaxes(type='category', categoryorder='category ascending')
+            fig_taller.update_xaxes(type='category', categoryorder='array', categoryarray=df_asist_plot['Fecha_Str'].unique())
             fig_taller.update_layout(xaxis_title="Fecha de Sesión", yaxis_title="Número de Estudiantes", legend_title="Institución", bargap=0.2)
             st.plotly_chart(fig_taller, use_container_width=True)
         else:
@@ -431,7 +442,9 @@ if df_raw is not None:
             
             df_asist_plot_cultural = df_final_talleres_cultural.groupby(['Date', 'Institucion']).agg({
                 'Asistencia_Absoluta': 'sum', 'Tema_Taller': combinar_temas_taller_unicos
-            }).reset_index().sort_values('Date')
+            }).reset_index()
+            # Ordenamos cronológicamente
+            df_asist_plot_cultural = df_asist_plot_cultural.sort_values('Date')
             df_asist_plot_cultural['Fecha_Str'] = df_asist_plot_cultural['Date'].dt.strftime('%d-%b')
 
             fig_cultural = px.bar(
@@ -440,8 +453,7 @@ if df_raw is not None:
                 hover_data={'Tema_Taller': True, 'Asistencia_Absoluta': True, 'Institucion': True, 'Fecha_Str': False},
                 labels={'Tema_Taller': 'Tema del Taller', 'Asistencia_Absoluta': 'Estudiantes Asistentes', 'Fecha_Str': 'Fecha'}
             )
-            # CORRECCIÓN DE RECESO: Forzamos categórico
-            fig_cultural.update_xaxes(type='category', categoryorder='category ascending')
+            fig_cultural.update_xaxes(type='category', categoryorder='array', categoryarray=df_asist_plot_cultural['Fecha_Str'].unique())
             fig_cultural.update_layout(xaxis_title="Fecha de Sesión", yaxis_title="Número de Estudiantes", legend_title="Institución", bargap=0.2)
             st.plotly_chart(fig_cultural, use_container_width=True)
         else:
