@@ -124,19 +124,27 @@ if df_raw is not None:
     if isinstance(sel_dates, list) and len(sel_dates) == 2:
         df_talleres_filtered = df_talleres_filtered[(df_talleres_filtered['Date'].dt.date >= sel_dates[0]) & (df_talleres_filtered['Date'].dt.date <= sel_dates[1])]
 
-    # --- EXCLUSIÓN GLOBAL DE LAS SEMANAS DE RECESO ---
+    # =========================================================================
+    # 🛠️ NUEVA EXCEPCIÓN INTELIGENTE PARA EL TALLER DE IDENTIDAD CULTURAL
+    # =========================================================================
     receso_inicio = pd.to_datetime('2026-05-17').date()
     receso_fin = pd.to_datetime('2026-05-31').date()
     
+    # Exclusión condicional para Clases: Se aplica el receso a todos MENOS a los registros con Curso == '4'
     df_filtered = df_filtered[
-        ~((df_filtered['Date'].dt.date >= receso_inicio) & (df_filtered['Date'].dt.date <= receso_fin))
+        ~((df_filtered['Date'].dt.date >= receso_inicio) & 
+          (df_filtered['Date'].dt.date <= receso_fin) & 
+          (df_filtered['Curso'].astype(str).str.strip() != '4'))
     ]
+    
+    # Exclusión condicional para Talleres: Se aplica el receso a todos MENOS al Taller de Identidad Cultural
     df_talleres_filtered = df_talleres_filtered[
-        ~((df_talleres_filtered['Date'].dt.date >= receso_inicio) & (df_talleres_filtered['Date'].dt.date <= receso_fin))
+        ~((df_talleres_filtered['Date'].dt.date >= receso_inicio) & 
+          (df_talleres_filtered['Date'].dt.date <= receso_fin) & 
+          (~df_talleres_filtered['Curso'].str.contains('Identidad Cultural|Identidad', case=False, na=False)))
     ]
 
-    # --- GENERAR LISTA DE ORDEN CRONOLÓGICO INDEPENDIENTE ---
-    # Esto asegura una lista única maestra con formato "dd-Mmm" ordenada de abril a junio
+    # --- GENERAR LISTAS DE ORDEN CRONOLÓGICO REAL DINÁMICO ---
     lista_fechas_ordenadas = df_filtered.sort_values('Date')['Date'].dt.strftime('%d-%b').unique().tolist()
     lista_fechas_talleres = df_talleres_filtered.sort_values('Date')['Date'].dt.strftime('%d-%b').unique().tolist()
 
@@ -182,6 +190,8 @@ if df_raw is not None:
                     'Pct_Asistencia': 'mean', 'Asistencia_Absoluta': 'sum', 'Alumnos': 'sum'
                 }).reset_index()
                 
+                df_asistencia_diaria = df_asistencia_diaria.sort_values('Date')
+                
                 if df_asistencia_diaria['Pct_Asistencia'].max() <= 1.1:
                     df_asistencia_diaria['Pct_Asistencia'] = df_asistencia_diaria['Pct_Asistencia'] * 100
                 
@@ -193,7 +203,6 @@ if df_raw is not None:
                     hover_data={'Asistencia_Absoluta': True, 'Alumnos': True, 'Fecha_Str': False},
                     labels={'Asistencia_Absoluta': 'Asistentes Reales', 'Alumnos': 'Total Inscritos', 'Pct_Asistencia': 'Asistencia (%)', 'Fecha_Str': 'Fecha'} 
                 )
-                # Forzar el orden cronológico absoluto usando el array maestro
                 fig_asist.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_ordenadas)
                 fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)", bargap=0.25, bargroupgap=0.1)
                 st.plotly_chart(fig_asist, use_container_width=True)
@@ -363,7 +372,6 @@ if df_raw is not None:
             )
             fig_barras.update_traces(hovertemplate="<b>Fecha:</b> %{x}<br><b>Nivel:</b> %{customdata[1]}<br><b>Porcentaje:</b> %{y:.1f}%<br><b>Tema Avanzado:</b> %{customdata[0]}<extra></extra>")
             
-            # AQUÍ ESTABA EL ERROR: Ahora forzamos el array maestro cronológico
             fig_barras.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_ordenadas)
             fig_barras.update_layout(yaxis_range=[0, 105], yaxis_title="Porcentaje (%)", xaxis_title="Fecha")
             st.plotly_chart(fig_barras, use_container_width=True)
