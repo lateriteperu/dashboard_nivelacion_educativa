@@ -135,6 +135,11 @@ if df_raw is not None:
         ~((df_talleres_filtered['Date'].dt.date >= receso_inicio) & (df_talleres_filtered['Date'].dt.date <= receso_fin))
     ]
 
+    # --- GENERAR LISTA DE ORDEN CRONOLÓGICO INDEPENDIENTE ---
+    # Esto asegura una lista única maestra con formato "dd-Mmm" ordenada de abril a junio
+    lista_fechas_ordenadas = df_filtered.sort_values('Date')['Date'].dt.strftime('%d-%b').unique().tolist()
+    lista_fechas_talleres = df_talleres_filtered.sort_values('Date')['Date'].dt.strftime('%d-%b').unique().tolist()
+
     st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
     st.markdown("---")
 
@@ -177,9 +182,6 @@ if df_raw is not None:
                     'Pct_Asistencia': 'mean', 'Asistencia_Absoluta': 'sum', 'Alumnos': 'sum'
                 }).reset_index()
                 
-                # REGLA: Ordenamos cronológicamente por objeto Datetime antes de generar el texto
-                df_asistencia_diaria = df_asistencia_diaria.sort_values('Date')
-                
                 if df_asistencia_diaria['Pct_Asistencia'].max() <= 1.1:
                     df_asistencia_diaria['Pct_Asistencia'] = df_asistencia_diaria['Pct_Asistencia'] * 100
                 
@@ -191,8 +193,8 @@ if df_raw is not None:
                     hover_data={'Asistencia_Absoluta': True, 'Alumnos': True, 'Fecha_Str': False},
                     labels={'Asistencia_Absoluta': 'Asistentes Reales', 'Alumnos': 'Total Inscritos', 'Pct_Asistencia': 'Asistencia (%)', 'Fecha_Str': 'Fecha'} 
                 )
-                # Mantener orden estricto de aparición del DataFrame (que ya está cronológico)
-                fig_asist.update_xaxes(type='category', categoryorder='array', categoryarray=df_asistencia_diaria['Fecha_Str'].unique())
+                # Forzar el orden cronológico absoluto usando el array maestro
+                fig_asist.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_ordenadas)
                 fig_asist.update_layout(yaxis_range=[0, 105], yaxis_title="Asistencia (%)", bargap=0.25, bargroupgap=0.1)
                 st.plotly_chart(fig_asist, use_container_width=True)
 
@@ -202,11 +204,9 @@ if df_raw is not None:
             
             if not df_filtered.empty:
                 df_asistencia_total = df_filtered.groupby(['Date', 'Institucion'])['Asistencia_Absoluta'].sum().reset_index()
-                # Ordenamos cronológicamente antes
-                df_asistencia_total = df_asistencia_total.sort_values('Date')
                 df_asistencia_total['Fecha_Str'] = df_asistencia_total['Date'].dt.strftime('%d-%b')
                 
-                df_sumas_diarias = df_asistencia_total.groupby(['Date', 'Fecha_Str'])['Asistencia_Absoluta'].sum().reset_index().sort_values('Date')
+                df_sumas_diarias = df_asistencia_total.groupby(['Date', 'Fecha_Str'])['Asistencia_Absoluta'].sum().reset_index()
                 
                 fig_total_asist = px.bar(
                     df_asistencia_total, x='Fecha_Str', y='Asistencia_Absoluta', color='Institucion',
@@ -217,7 +217,7 @@ if df_raw is not None:
                     x=df_sumas_diarias['Fecha_Str'], y=df_sumas_diarias['Asistencia_Absoluta'],
                     mode='text', text=df_sumas_diarias['Asistencia_Absoluta'], textposition='top center', showlegend=False, hoverinfo='skip'
                 )
-                fig_total_asist.update_xaxes(type='category', categoryorder='array', categoryarray=df_asistencia_total['Fecha_Str'].unique())
+                fig_total_asist.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_ordenadas)
                 fig_total_asist.update_layout(yaxis_title="Cantidad de Estudiantes", legend_title="Institución", hovermode="x unified", yaxis_range=[0, df_sumas_diarias['Asistencia_Absoluta'].max() * 1.15])
                 st.plotly_chart(fig_total_asist, use_container_width=True)
             
@@ -238,7 +238,6 @@ if df_raw is not None:
                 if df_final['Pct_Asistencia'].max() <= 1.1:
                     df_final['Pct_Asistencia'] = df_final['Pct_Asistencia'] * 100
 
-                # Aseguramos orden cronológico estricto
                 df_final = df_final.sort_values(['Institucion', 'Date'])
                 df_final['Fecha_Str'] = df_final['Date'].dt.strftime('%d-%b')
                 
@@ -254,9 +253,6 @@ if df_raw is not None:
                     'PROMEDIO GENERAL': '#333333'                             
                 }
 
-                # Generamos lista de ordenación basada únicamente en la secuencia cronológica de las fechas únicas
-                orden_fechas_linea = df_final.sort_values('Date')['Fecha_Str'].unique()
-
                 fig_comparativo = px.line(
                     df_final, x='Fecha_Str', y='Media_Movil', color='Institucion', line_shape='spline',
                     title="Porcentaje de estudiantes asistentes (Media móvil de 3 sesiones)",
@@ -265,7 +261,7 @@ if df_raw is not None:
                 if 'PROMEDIO GENERAL' in df_final['Institucion'].values:
                     fig_comparativo.update_traces(patch={"line": {"width": 5, "dash": 'dot'}}, selector={'name': 'PROMEDIO GENERAL'})
                 
-                fig_comparativo.update_xaxes(type='category', categoryorder='array', categoryarray=orden_fechas_linea)
+                fig_comparativo.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_ordenadas)
                 fig_comparativo.update_layout(yaxis_range=[0, 105], legend_title="Institución")
                 st.plotly_chart(fig_comparativo, use_container_width=True)
 
@@ -320,14 +316,12 @@ if df_raw is not None:
             # Gráfico de Líneas (Puntaje)
             st.subheader("🌟 Evolución de Respuestas Correctas en el Exit Ticket (%)")
             df_notas = df_filtered.groupby(['Date', 'Grado'])['Pct_Puntaje'].mean().reset_index()
-            # Ordenamos cronológicamente
-            df_notas = df_notas.sort_values('Date')
             df_notas['Pct_Puntaje'] = df_notas['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
             df_notas['Fecha_Str'] = df_notas['Date'].dt.strftime('%d-%b')
             
             fig_linea = px.line(df_notas, x='Fecha_Str', y='Pct_Puntaje', color='Grado', markers=True)
             fig_linea.update_traces(connectgaps=True)
-            fig_linea.update_xaxes(type='category', categoryorder='array', categoryarray=df_notas['Fecha_Str'].unique())
+            fig_linea.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_ordenadas)
             fig_linea.update_layout(yaxis_range=[0, 105], yaxis_title="Puntaje (%)", title="Puntaje Promedio del Exit Ticket (%)", xaxis_title="Fecha")
             st.plotly_chart(fig_linea, use_container_width=True)
 
@@ -354,9 +348,6 @@ if df_raw is not None:
                 'Logro': 'sum', 'Proceso': 'sum', 'Inicio': 'sum', 'Tema_Dictado': combiner_temas_unicos
             }).reset_index()
             
-            # Ordenamos cronológicamente antes del string
-            df_counts = df_counts.sort_values('Date')
-            
             df_counts['Total'] = df_counts[['Logro', 'Proceso', 'Inicio']].sum(axis=1)
             for col in ['Logro', 'Proceso', 'Inicio']:
                 df_counts[col] = (df_counts[col] / df_counts['Total']) * 100
@@ -372,7 +363,8 @@ if df_raw is not None:
             )
             fig_barras.update_traces(hovertemplate="<b>Fecha:</b> %{x}<br><b>Nivel:</b> %{customdata[1]}<br><b>Porcentaje:</b> %{y:.1f}%<br><b>Tema Avanzado:</b> %{customdata[0]}<extra></extra>")
             
-            fig_barras.update_xaxes(type='category', categoryorder='array', categoryarray=df_counts['Fecha_Str'].unique())
+            # AQUÍ ESTABA EL ERROR: Ahora forzamos el array maestro cronológico
+            fig_barras.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_ordenadas)
             fig_barras.update_layout(yaxis_range=[0, 105], yaxis_title="Porcentaje (%)", xaxis_title="Fecha")
             st.plotly_chart(fig_barras, use_container_width=True)
 
@@ -416,8 +408,6 @@ if df_raw is not None:
             df_asist_plot = df_final_talleres.groupby(['Date', 'Institucion']).agg({
                 'Asistencia_Absoluta': 'sum', 'Tema_Taller': combinar_temas_taller_unicos
             }).reset_index()
-            # Ordenamos cronológicamente
-            df_asist_plot = df_asist_plot.sort_values('Date')
             df_asist_plot['Fecha_Str'] = df_asist_plot['Date'].dt.strftime('%d-%b')
 
             fig_taller = px.bar(
@@ -426,7 +416,7 @@ if df_raw is not None:
                 hover_data={'Tema_Taller': True, 'Asistencia_Absoluta': True, 'Institucion': True, 'Fecha_Str': False},
                 labels={'Tema_Taller': 'Tema del Taller', 'Asistencia_Absoluta': 'Estudiantes Asistentes', 'Fecha_Str': 'Fecha'}
             )
-            fig_taller.update_xaxes(type='category', categoryorder='array', categoryarray=df_asist_plot['Fecha_Str'].unique())
+            fig_taller.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_talleres)
             fig_taller.update_layout(xaxis_title="Fecha de Sesión", yaxis_title="Número de Estudiantes", legend_title="Institución", bargap=0.2)
             st.plotly_chart(fig_taller, use_container_width=True)
         else:
@@ -443,8 +433,6 @@ if df_raw is not None:
             df_asist_plot_cultural = df_final_talleres_cultural.groupby(['Date', 'Institucion']).agg({
                 'Asistencia_Absoluta': 'sum', 'Tema_Taller': combinar_temas_taller_unicos
             }).reset_index()
-            # Ordenamos cronológicamente
-            df_asist_plot_cultural = df_asist_plot_cultural.sort_values('Date')
             df_asist_plot_cultural['Fecha_Str'] = df_asist_plot_cultural['Date'].dt.strftime('%d-%b')
 
             fig_cultural = px.bar(
@@ -453,7 +441,7 @@ if df_raw is not None:
                 hover_data={'Tema_Taller': True, 'Asistencia_Absoluta': True, 'Institucion': True, 'Fecha_Str': False},
                 labels={'Tema_Taller': 'Tema del Taller', 'Asistencia_Absoluta': 'Estudiantes Asistentes', 'Fecha_Str': 'Fecha'}
             )
-            fig_cultural.update_xaxes(type='category', categoryorder='array', categoryarray=df_asist_plot_cultural['Fecha_Str'].unique())
+            fig_cultural.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_talleres)
             fig_cultural.update_layout(xaxis_title="Fecha de Sesión", yaxis_title="Número de Estudiantes", legend_title="Institución", bargap=0.2)
             st.plotly_chart(fig_cultural, use_container_width=True)
         else:
