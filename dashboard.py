@@ -138,6 +138,13 @@ if df_raw is not None:
     if isinstance(sel_dates, list) and len(sel_dates) == 2:
         df_talleres_filtered = df_talleres_filtered[(df_talleres_filtered['Date'].dt.date >= sel_dates[0]) & (df_talleres_filtered['Date'].dt.date <= sel_dates[1])]
 
+# ✂️ RECESO: Excluye el periodo inactivo (17 al 31 de mayo de 2026)
+        receso_inicio = pd.to_datetime('2026-05-17').date()
+        receso_fin = pd.to_datetime('2026-05-31').date()
+        df_filtered = df_filtered[
+            ~((df_filtered['Date'].dt.date >= receso_inicio) & (df_filtered['Date'].dt.date <= receso_fin))
+        ]
+
     st.title("📊 Panel de Monitoreo: Asistencia y Notas de Escuela de Nivelación Educativa en el Bajo Urubamba 2026 🏫")
     st.markdown("---")
 
