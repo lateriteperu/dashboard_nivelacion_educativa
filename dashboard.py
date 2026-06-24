@@ -92,14 +92,14 @@ def load_data():
 df_raw, df_talleres_raw = load_data()
 
 if df_raw is not None:
-    # --- 3. BARRA LATERAL (FILTROS EN CASCADA CORREGIDOS) ---
+    # --- 3. BARRA LATERAL (FILTROS EN CASCADA POR FECHA) ---
     st.sidebar.header("Filtros del Dashboard")
     
-    # ⏱️ PASO 1: Capturar primero el filtro temporal
+    # Capturar primero el filtro temporal maestro
     min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
     sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
-    # Construimos copias temporales basadas únicamente en las fechas seleccionadas
+    # Filtrar bases de datos temporales solo por la fecha seleccionada
     df_temporal_clases = df_raw.copy()
     df_temporal_talleres = df_talleres_raw.copy()
     
@@ -107,53 +107,48 @@ if df_raw is not None:
         df_temporal_clases = df_temporal_clases[(df_temporal_clases['Date'].dt.date >= sel_dates[0]) & (df_temporal_clases['Date'].dt.date <= sel_dates[1])]
         df_temporal_talleres = df_temporal_talleres[(df_temporal_talleres['Date'].dt.date >= sel_dates[0]) & (df_temporal_talleres['Date'].dt.date <= sel_dates[1])]
 
-    # 🔄 PASO 2: Alimentar los selectores de texto usando la data filtrada por fecha
+    # Alimentar selectores dinámicamente según la fecha activa
     sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_temporal_clases['Institucion'].unique().tolist()))
     sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_temporal_clases['Grado'].unique().tolist()))
     sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_temporal_clases['Curso'].unique().tolist()))
     sel_sesion = st.sidebar.selectbox("Seleccionar Tipo de Sesión:", ['Todos'] + sorted(df_temporal_clases['Sesion'].unique().tolist()))
 
-    # --- BOTÓN DE LIMPIEZA DE CACHÉ ---
     st.sidebar.markdown("---")
     if st.sidebar.button("🔄 Recargar Base de Datos", use_container_width=True):
         st.cache_data.clear() 
         st.success("¡Datos actualizados!")
         st.rerun()
 
-    # --- LÓGICA DE FILTRADO FINAL CONSOLIDADA ---
-    # 1. Filtramos la base Académica (Tab 1 y 2) usando los selectores dinámicos
+    # --- LÓGICA DE FILTRADO FINAL ---
     df_filtered = df_temporal_clases.copy()
     if sel_inst != 'Todas': df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
     if sel_grado != 'Todos': df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
     if sel_curso != 'Todos': df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
     if sel_sesion != 'Todos': df_filtered = df_filtered[df_filtered['Sesion'] == sel_sesion]
 
-    # 2. Filtramos la base de Talleres (Tab 3) - Sincronizado por Institución y Grado
     df_talleres_filtered = df_temporal_talleres.copy()
     if sel_inst != 'Todas': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Institucion'] == sel_inst]
     if sel_grado != 'Todos': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Grado'] == sel_grado]
 
     # =========================================================================
-    # ✂️ EXCEPCIÓN INTELIGENTE PARA EL TALLER DE IDENTIDAD CULTURAL
+    # ✂️ EXCEPCIÓN DEL RECESO DE MAYO (No aplica a Identidad Cultural)
     # =========================================================================
     receso_inicio = pd.to_datetime('2026-05-17').date()
     receso_fin = pd.to_datetime('2026-05-31').date()
     
-    # Exclusión condicional para Clases: Se aplica el receso a todos MENOS a los registros con Curso == '4'
     df_filtered = df_filtered[
         ~((df_filtered['Date'].dt.date >= receso_inicio) & 
           (df_filtered['Date'].dt.date <= receso_fin) & 
           (df_filtered['Curso'].astype(str).str.strip() != '4'))
     ]
     
-    # Exclusión condicional para Talleres: Se aplica el receso a todos MENOS al Taller de Identidad Cultural
     df_talleres_filtered = df_talleres_filtered[
         ~((df_talleres_filtered['Date'].dt.date >= receso_inicio) & 
           (df_talleres_filtered['Date'].dt.date <= receso_fin) & 
           (~df_talleres_filtered['Curso'].str.contains('Identidad Cultural|Identidad', case=False, na=False)))
     ]
 
-    # --- GENERAR LISTAS DE ORDEN CRONOLÓGICO REAL DINÁMICO ---
+    # 🛠️ CORRECCIÓN AQUÍ: Las listas se calculan DESPUÉS de aplicar todos los filtros y exclusiones
     lista_fechas_ordenadas = df_filtered.sort_values('Date')['Date'].dt.strftime('%d-%b').unique().tolist()
     lista_fechas_talleres = df_talleres_filtered.sort_values('Date')['Date'].dt.strftime('%d-%b').unique().tolist()
 
