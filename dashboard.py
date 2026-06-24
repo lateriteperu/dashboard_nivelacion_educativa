@@ -92,22 +92,27 @@ def load_data():
 df_raw, df_talleres_raw = load_data()
 
 if df_raw is not None:
-    # --- 3. BARRA LATERAL (FILTROS EN CASCADA POR FECHA) ---
+    # --- 3. BARRA LATERAL (FILTROS EN CASCADA COMPLETA) ---
     st.sidebar.header("Filtros del Dashboard")
     
-    # Capturar primero el filtro temporal maestro
+    # Capturar el rango temporal maestro
     min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
     sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
-    # Filtrar bases de datos temporales solo por la fecha seleccionada
+    # Inicializar las bases de datos temporales
     df_temporal_clases = df_raw.copy()
     df_temporal_talleres = df_talleres_raw.copy()
     
-    if isinstance(sel_dates, list) and len(sel_dates) == 2:
+    # ⚡ CORRECCIÓN MAESTRA: Validar de forma tolerante si es lista o tupla y si contiene ambas fechas
+    if isinstance(sel_dates, (list, tuple)) and len(sel_dates) == 2:
         df_temporal_clases = df_temporal_clases[(df_temporal_clases['Date'].dt.date >= sel_dates[0]) & (df_temporal_clases['Date'].dt.date <= sel_dates[1])]
         df_temporal_talleres = df_temporal_talleres[(df_temporal_talleres['Date'].dt.date >= sel_dates[0]) & (df_temporal_talleres['Date'].dt.date <= sel_dates[1])]
+    elif isinstance(sel_dates, (list, tuple)) and len(sel_dates) == 1:
+        # Si el usuario solo ha hecho un clic en el calendario, pausamos el render para evitar que se vacíe la pantalla
+        st.info("💡 Por favor, seleccione la fecha de finalización en el calendario lateral.")
+        st.stop()
 
-    # Alimentar selectores dinámicamente según la fecha activa
+    # Alimentar los selectores dinámicos superiores usando la data ya filtrada por fecha
     sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_temporal_clases['Institucion'].unique().tolist()))
     sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_temporal_clases['Grado'].unique().tolist()))
     sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_temporal_clases['Curso'].unique().tolist()))
@@ -148,7 +153,7 @@ if df_raw is not None:
           (~df_talleres_filtered['Curso'].str.contains('Identidad Cultural|Identidad', case=False, na=False)))
     ]
 
-    # 🛠️ CORRECCIÓN AQUÍ: Las listas se calculan DESPUÉS de aplicar todos los filtros y exclusiones
+    # Re-calculamos el orden de las columnas basándonos puramente en la data final filtrada
     lista_fechas_ordenadas = df_filtered.sort_values('Date')['Date'].dt.strftime('%d-%b').unique().tolist()
     lista_fechas_talleres = df_talleres_filtered.sort_values('Date')['Date'].dt.strftime('%d-%b').unique().tolist()
 
@@ -195,7 +200,6 @@ if df_raw is not None:
                 }).reset_index()
                 
                 df_asistencia_diaria = df_asistencia_diaria.sort_values('Date')
-                
                 if df_asistencia_diaria['Pct_Asistencia'].max() <= 1.1:
                     df_asistencia_diaria['Pct_Asistencia'] = df_asistencia_diaria['Pct_Asistencia'] * 100
                 
@@ -283,25 +287,6 @@ if df_raw is not None:
             df_tabla_asist['Date'] = df_tabla_asist['Date'].dt.strftime('%d-%m-%Y')
             st.dataframe(df_tabla_asist.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
 
-        st.markdown("---")
-        st.subheader("💬 Registro Centralizado de Incidencias y Observaciones de Aula")
-            
-        if 'comment_class' in df_filtered.columns:
-            df_incidencias = df_filtered.copy()
-            txt_class_limpio = df_incidencias['comment_class'].astype(str).str.strip()
-            df_tabla_incidencias = df_incidencias[(df_incidencias['comment_class'].notna()) & (txt_class_limpio != "") & (txt_class_limpio != "nan") & (txt_class_limpio != "None")].copy()
-            
-            if not df_tabla_incidencias.empty:
-                df_tabla_incidencias = df_tabla_incidencias.sort_values(by='Date', ascending=False)
-                df_tabla_incidencias['Fecha'] = df_tabla_incidencias['Date'].dt.strftime('%d-%b-%Y')
-                df_render_incidencias = df_tabla_incidencias[['Fecha', 'Institucion', 'Grado', 'Curso', 'Sesion', 'comment_class']].rename(columns={'comment_class': 'Incidencias / Observaciones de la Clase', 'Sesion': 'Tipo de Sesión'})
-                st.write(f"Se encontraron **{len(df_render_incidencias)}** reportes grupales en el periodo seleccionado:")
-                st.dataframe(df_render_incidencias, use_container_width=True, hide_index=True)
-            else:
-                st.info("✨ No se registraron incidencias grupales para los filtros seleccionados.")
-        else:
-            st.warning("⚠️ La variable 'comment_class' no fue encontrada.")
-
     # --- TAB 2: RENDIMIENTO ACADÉMICO ---
     with tab2:
         st.header("🎯 Rendimiento Académico (Exit Tickets)")
@@ -312,7 +297,8 @@ if df_raw is not None:
             
             pct_aplicacion = (numero_aplicados / total_sesiones_periodo * 100) if total_sesiones_periodo > 0 else 0
             prom_puntaje_raw = df_filtered['Pct_Puntaje'].mean()
-            promedio_puntaje_real = prom_puntaje_raw * 100 if prom_puntaje_raw <= 1.0 else prom_puntaje_raw
+            if prom_puntaje_raw <= 1.0:
+                prom_puntaje_raw = prom_puntaje_raw * 100
             
             total_est_eval = df_filtered[['Logro', 'Proceso', 'Inicio']].sum().sum()
             total_est_logro = df_filtered['Logro'].sum()
@@ -321,7 +307,7 @@ if df_raw is not None:
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Sesiones con Evaluación", f"{numero_aplicados}")
             m2.metric("Sesiones con Evaluación (%)", f"{pct_aplicacion:.1f}%")
-            m3.metric("Puntaje Promedio", f"{promedio_puntaje_real:.1f}%")
+            m3.metric("Puntaje Promedio", f"{prom_puntaje_raw:.1f}%")
             m4.metric("Estudiantes en Logro", f"{promedio_logro_real:.1f}%")
 
             st.markdown("---")
@@ -379,13 +365,6 @@ if df_raw is not None:
             fig_barras.update_xaxes(type='category', categoryorder='array', categoryarray=lista_fechas_ordenadas)
             fig_barras.update_layout(yaxis_range=[0, 105], yaxis_title="Porcentaje (%)", xaxis_title="Fecha")
             st.plotly_chart(fig_barras, use_container_width=True)
-
-            with st.expander("📂 Ver datos detallados de rendimiento"):
-                cols_raw = ['Date', 'Institucion', 'Grado', 'Alumnos', 'Asistencia_Absoluta', 'Logro', 'Proceso', 'Inicio', 'Pct_Puntaje']
-                df_t = df_filtered[cols_raw].copy()
-                df_t['Date'] = df_t['Date'].dt.strftime('%d-%m-%Y')
-                df_t['Pct_Puntaje'] = df_t['Pct_Puntaje'].apply(lambda x: x*100 if x <= 1.0 else x)
-                st.dataframe(df_t.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
 
     # --- TAB 3: TALLERES ---
     with tab3:
