@@ -92,40 +92,49 @@ def load_data():
 df_raw, df_talleres_raw = load_data()
 
 if df_raw is not None:
-    # --- 3. BARRA LATERAL (FILTROS) ---
+    # --- 3. BARRA LATERAL (FILTROS EN CASCADA CORREGIDOS) ---
     st.sidebar.header("Filtros del Dashboard")
     
-    sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_raw['Institucion'].unique().tolist()))
-    sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_raw['Grado'].unique().tolist()))
-    sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_raw['Curso'].unique().tolist()))
-    sel_sesion = st.sidebar.selectbox("Seleccionar Tipo de Sesión:", ['Todos'] + sorted(df_raw['Sesion'].unique().tolist()))
-
+    # ⏱️ PASO 1: Capturar primero el filtro temporal
     min_d, max_d = df_raw['Date'].min().date(), df_raw['Date'].max().date()
     sel_dates = st.sidebar.date_input("Rango de fechas:", [min_d, max_d])
 
+    # Construimos copias temporales basadas únicamente en las fechas seleccionadas
+    df_temporal_clases = df_raw.copy()
+    df_temporal_talleres = df_talleres_raw.copy()
+    
+    if isinstance(sel_dates, list) and len(sel_dates) == 2:
+        df_temporal_clases = df_temporal_clases[(df_temporal_clases['Date'].dt.date >= sel_dates[0]) & (df_temporal_clases['Date'].dt.date <= sel_dates[1])]
+        df_temporal_talleres = df_temporal_talleres[(df_temporal_talleres['Date'].dt.date >= sel_dates[0]) & (df_temporal_talleres['Date'].dt.date <= sel_dates[1])]
+
+    # 🔄 PASO 2: Alimentar los selectores de texto usando la data filtrada por fecha
+    sel_inst = st.sidebar.selectbox("Seleccionar Institución:", ['Todas'] + sorted(df_temporal_clases['Institucion'].unique().tolist()))
+    sel_grado = st.sidebar.selectbox("Seleccionar Grado:", ['Todos'] + sorted(df_temporal_clases['Grado'].unique().tolist()))
+    sel_curso = st.sidebar.selectbox("Seleccionar Curso:", ['Todos'] + sorted(df_temporal_clases['Curso'].unique().tolist()))
+    sel_sesion = st.sidebar.selectbox("Seleccionar Tipo de Sesión:", ['Todos'] + sorted(df_temporal_clases['Sesion'].unique().tolist()))
+
+    # --- BOTÓN DE LIMPIEZA DE CACHÉ ---
     st.sidebar.markdown("---")
     if st.sidebar.button("🔄 Recargar Base de Datos", use_container_width=True):
         st.cache_data.clear() 
         st.success("¡Datos actualizados!")
         st.rerun()
 
-    # --- LÓGICA DE FILTRADO ---
-    df_filtered = df_raw.copy()
+    # --- LÓGICA DE FILTRADO FINAL CONSOLIDADA ---
+    # 1. Filtramos la base Académica (Tab 1 y 2) usando los selectores dinámicos
+    df_filtered = df_temporal_clases.copy()
     if sel_inst != 'Todas': df_filtered = df_filtered[df_filtered['Institucion'] == sel_inst]
     if sel_grado != 'Todos': df_filtered = df_filtered[df_filtered['Grado'] == sel_grado]
     if sel_curso != 'Todos': df_filtered = df_filtered[df_filtered['Curso'] == sel_curso]
     if sel_sesion != 'Todos': df_filtered = df_filtered[df_filtered['Sesion'] == sel_sesion]
-    if isinstance(sel_dates, list) and len(sel_dates) == 2:
-        df_filtered = df_filtered[(df_filtered['Date'].dt.date >= sel_dates[0]) & (df_filtered['Date'].dt.date <= sel_dates[1])]
 
-    df_talleres_filtered = df_talleres_raw.copy()
+    # 2. Filtramos la base de Talleres (Tab 3) - Sincronizado por Institución y Grado
+    df_talleres_filtered = df_temporal_talleres.copy()
     if sel_inst != 'Todas': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Institucion'] == sel_inst]
     if sel_grado != 'Todos': df_talleres_filtered = df_talleres_filtered[df_talleres_filtered['Grado'] == sel_grado]
-    if isinstance(sel_dates, list) and len(sel_dates) == 2:
-        df_talleres_filtered = df_talleres_filtered[(df_talleres_filtered['Date'].dt.date >= sel_dates[0]) & (df_talleres_filtered['Date'].dt.date <= sel_dates[1])]
 
     # =========================================================================
-    # 🛠️ NUEVA EXCEPCIÓN INTELIGENTE PARA EL TALLER DE IDENTIDAD CULTURAL
+    # ✂️ EXCEPCIÓN INTELIGENTE PARA EL TALLER DE IDENTIDAD CULTURAL
     # =========================================================================
     receso_inicio = pd.to_datetime('2026-05-17').date()
     receso_fin = pd.to_datetime('2026-05-31').date()
